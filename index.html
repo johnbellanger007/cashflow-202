@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Cashflow 202 - Financial Statement</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Sidebar / Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h1>CASHFLOW <span class="accent">202</span></h1>
+            </div>
+            <nav>
+                <button class="nav-btn active" id="rat-statement-btn" data-tab="statement">📊 Financial Statement</button>
+                <button class="nav-btn hidden" id="ft-statement-btn" data-tab="fast-track-statement">🚀 FT Statement</button>
+                <button class="nav-btn" id="board-btn" data-tab="board">🚀 Board (Rat Race)</button>
+                <button class="nav-btn" id="portfolio-btn" data-tab="portfolio">💼 Portfolio</button>
+                <button class="nav-btn" id="stocks-btn" data-tab="stocks">📈 Check Stocks</button>
+            </nav>
+            <div class="user-status">
+                <div class="avatar">👨‍⚕️</div>
+                <div class="job-title" id="player-job">Doctor</div>
+                <div id="player-dream" class="dream"></div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="turn-indicator" id="turn-status-indicator">
+                    <span class="avatar" id="turn-avatar">🦁</span>
+                    <span class="turn-label" id="turn-text">YOUR TURN</span>
+                </div>
+                <div class="cash-display">
+                    <span class="label">Cash</span>
+                    <span class="value success" id="player-cash">$ 3,500</span>
+                </div>
+                <div class="passive-income-display">
+                    <span class="label">Passive Income vs Total Expenses</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="passive-income-progress" style="width: 5%;"></div>
+                    </div>
+                    <div class="progress-values">
+                        <span id="player-passive-income">$ 0</span> / <span id="player-total-expenses">$ 9,650</span>
+                    </div>
+                </div>
+                <!-- Sound Toggle Button -->
+                <button id="mute-btn" class="nav-btn" style="margin-left: auto; width: auto; justify-content: center; padding: 10px 15px;" onclick="SoundManager.toggleMute()">🔊</button>
+                <button id="new-game-btn" class="nav-btn" style="margin-left: 20px; width: auto; justify-content: center; padding: 10px 20px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--accent-primary); border-radius: var(--radius-md); color: var(--text-primary); font-weight: 600;">🆕 New Game</button>
+            </header>
+
+            <!-- Rat Race Financial Statement -->
+            <section class="dashboard" id="tab-statement">
+                <!-- Column 1: Income & Expenses -->
+                        <div class="card income-card">
+                            <div class="section-header">INCOME</div>
+                            <div class="data-list">
+                                <div class="data-row">
+                                    <span>Salary:</span>
+                                    <span class="value" id="salary-val">$ 0</span>
+                                </div>
+                                <div class="divider"></div>
+                                <div class="data-row">
+                                    <span>Passive Income:</span>
+                                    <span class="value success" id="passive-income-val">$ 0</span>
+                                </div>
+                                <div class="data-list-sub" id="dividends-list"></div>
+                                <div class="data-list-sub" id="real-estate-list"></div>
+                                <div class="data-row highlight">
+                                    <span>TOTAL INCOME:</span>
+                                    <span class="value success" id="total-income-val">$ 0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card expenses-card">
+                            <div class="section-header">EXPENSES</div>
+                            <div class="data-list" id="expense-list">
+                                <div class="data-row"><span>Taxes:</span><span class="value" id="taxes-val">$ 0</span></div>
+                                <div class="data-row"><span>Home Mortgage:</span><span class="value" id="home-mortgage-val">$ 0</span></div>
+                                <div class="data-row"><span>School Loan:</span><span class="value" id="school-loan-val">$ 0</span></div>
+                                <div class="data-row"><span>Car Loan:</span><span class="value" id="car-loan-val">$ 0</span></div>
+                                <div class="data-row"><span>Credit Card:</span><span class="value" id="credit-card-val">$ 0</span></div>
+                                <div class="data-row"><span>Retail Debt:</span><span class="value" id="retail-val">$ 0</span></div>
+                                <div class="data-row"><span>Other Expenses:</span><span class="value">$ 0</span></div>
+                                <div class="data-row"><span>Bank Loan Payment:</span><span class="value" id="bank-loan-payment-val">$ 0</span></div>
+                                <div class="data-row"><span>Children (<span id="children-count">0</span>):</span><span class="value" id="child-expense-val">$ 0</span></div>
+                                <div class="divider"></div>
+                                <div class="data-row total">
+                                    <span>TOTAL EXPENSES:</span>
+                                    <span class="value danger" id="total-expense-val">$ 0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card summary-card">
+                            <div class="summary-grid">
+                                <div class="summary-item">
+                                    <span class="label">Total Income</span>
+                                    <span class="value" id="calc-income">$ 0</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="label">Total Expenses</span>
+                                    <span class="value danger" id="calc-expense">$ 0</span>
+                                </div>
+                                <div class="divider-v"></div>
+                                <div class="summary-item primary">
+                                    <span class="label">Monthly Cash Flow</span>
+                                    <span class="value success" id="monthly-cashflow">$ 0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card assets-card">
+                            <div class="section-header">ASSETS</div>
+                            <div class="asset-section">
+                                <h3>Savings</h3>
+                                <div class="data-row">
+                                    <span>Cash / Savings:</span>
+                                    <span class="value" id="savings-val">$ 0</span>
+                                </div>
+                            </div>
+                            
+                            <div class="asset-section mt-3">
+                                <h3>Stocks / Funds / CDs</h3>
+                                <div class="table-outer">
+                                    <table id="stocks-table" class="worksheet-table">
+                                        <thead><tr><th>Symbol</th><th>Shares</th><th>Cost/Sh</th></tr></thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="asset-section mt-3">
+                                <h3>Real Estate / Business</h3>
+                                <div class="table-outer">
+                                    <table id="real-estate-assets-table" class="worksheet-table">
+                                        <thead><tr><th>Description</th><th>Down Pay</th><th>Cost</th></tr></thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="asset-section mt-3">
+                                <h3>Options (202)</h3>
+                                <div class="table-outer">
+                                    <table id="options-table" class="worksheet-table">
+                                        <thead><tr><th>Symbol</th><th>Qty</th><th>Cost</th><th>Strike</th><th>Action</th></tr></thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card liabilities-card">
+                            <div class="section-header">LIABILITIES</div>
+                            <div class="data-list">
+                                <div class="data-row"><span>Home Mortgage:</span><span class="value" id="home-mortgage-liab">$ 0</span></div>
+                                <div class="data-row"><span>School Loan:</span><span class="value" id="school-loan-liab">$ 0</span></div>
+                                <div class="data-row"><span>Car Loan:</span><span class="value" id="car-loan-liab">$ 0</span></div>
+                                <div class="data-row"><span>Credit Card:</span><span class="value" id="credit-card-liab">$ 0</span></div>
+                                <div class="data-row"><span>Retail Debt:</span><span class="value" id="retail-liab">$ 0</span></div>
+                                <div class="data-row"><span>Bank Loan:</span><span class="value" id="bank-loan-liab">$ 0</span></div>
+                                <div class="asset-section mt-3">
+                                    <h3>Real Estate Mortgages</h3>
+                                    <div id="real-estate-liab-list"></div>
+                                </div>
+                                <div class="asset-section mt-3">
+                                    <h3>Short Positions (202)</h3>
+                                    <div class="table-outer">
+                                        <table id="shorts-table" class="worksheet-table">
+                                            <thead><tr><th>Symbol</th><th>Qty</th><th>Sale Price</th><th>Current</th><th>Action</th></tr></thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+            </section>
+            
+            <!-- Fast Track Financial Statement -->
+            <section id="tab-fast-track-statement" class="dashboard hidden phase-2-statement">
+                <!-- Column 1: Win Condition -->
+                <div class="card ft-win-card">
+                    <div class="section-header">WIN CONDITION</div>
+                    <div class="data-list">
+                        <div class="data-row">
+                            <span id="ft-dream-objective" class="dream" style="color:#eabb00; font-weight:700;">Objective: Choose a Dream</span>
+                        </div>
+                        <div class="divider"></div>
+                        <div class="data-row">
+                            <span>Beginning Income</span>
+                            <span class="value" id="ft-beginning-income-win">$ 0</span>
+                        </div>
+                        <div class="data-row">
+                            <span>Target Increase</span>
+                            <span class="value success">+$50,000</span>
+                        </div>
+                        <div class="data-row total">
+                            <span>Goal to Win</span>
+                            <span class="value success" id="ft-goal-to-win">$ 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column 2: Your Buyout -->
+                <div class="card ft-buyout-card">
+                    <div class="section-header">YOUR BUYOUT</div>
+                    <div class="data-list">
+                        <div class="data-row">
+                            <span>Passive Income (x100)</span>
+                            <span class="value" id="ft-passive-rounded">$ 0</span>
+                        </div>
+                        <div class="divider"></div>
+                        <div class="data-row total">
+                            <span>Fast Track Cash</span>
+                            <span class="value success" id="ft-beginning-income">$ 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column 3: Intelligence / Notes -->
+                <div class="card ft-intel-card">
+                    <div class="section-header">FINANCIAL INTELLIGENCE</div>
+                    <div class="data-list">
+                        <p class="ft-intelligence-note" style="font-size: 13px; line-height: 1.5; color: var(--text-secondary); margin: 0;">
+                            <strong style="color: #eabb00;">Why 100x?</strong><br>
+                            You've proven your financial intelligence by escaping the Rat Race! 
+                            Your Rat Race investments have prospered, allowing you to multiply your wealth 100 times for the Fast Track.
+                        </p>
+                        <div class="divider"></div>
+                        <p class="ft-footer-note" style="font-size: 12px; font-style: italic; color: var(--text-muted); margin: 0;">
+                            Your <strong>CASHFLOW™ Day Income</strong> is your beginning cash plus all business profits you acquire here.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Row 2: Income Record (Full Width) -->
+                <div class="card ft-record-card" style="grid-column: 1 / -1;">
+                    <div class="section-header">INCOME RECORD</div>
+                    <div class="data-row ft-starting-income-row" style="margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 10px;">
+                        <span style="font-weight: 600;">Base Income:</span>
+                        <span class="value" id="ft-record-start-income">$ 0</span>
+                    </div>
+                    <div class="table-outer">
+                        <table id="ft-income-record-table" class="worksheet-table">
+                            <thead>
+                                <tr>
+                                    <th>Business</th>
+                                    <th>Cash Flow</th>
+                                    <th>New Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ft-income-record-tbody">
+                                <tr><td colspan="3" class="text-center empty-state">No businesses yet</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="ft-summary-row mt-3" style="display: flex; justify-content: flex-end; gap: 30px; border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 20px;">
+                        <div class="data-row">
+                            <span style="margin-right: 10px;">Total FT Income:</span>
+                            <span class="value success" id="ft-total-cf" style="font-weight: 700; font-size: 18px;">$ 0</span>
+                        </div>
+                        <div class="data-row">
+                            <span style="margin-right: 10px;">CASHFLOW™ Day:</span>
+                            <span class="value success" id="ft-current-day-income" style="font-weight: 700; font-size: 18px;">$ 0</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- Board Area (Rat Race) -->
+            <section class="board-view hidden" id="tab-board">
+                <div class="board-header">
+                    <h2>Board (Rat Race)</h2>
+                    <div class="board-controls">
+                        <button class="btn" id="debug-win-btn" style="padding:4px 8px; font-size:10px; background:var(--bg-lighter); color:white; border:none; border-radius:4px; opacity:0.7;">Dev: Win Rat Race</button>
+                        <button id="btn-roll-dice" class="action-btn">🎲 Roll Dice</button>
+                    </div>
+                </div>
+                
+                <div class="board-container">
+                    <div id="full-board-wrapper">
+                        <!-- Fast Track Outer Rectangle -->
+                        <div id="fast-track-container">
+                            <div id="player-token-fast" class="player-token hidden">🦁</div>
+                        </div>
+                        
+                        <!-- Rat Race Inner Circle -->
+                        <div id="rat-race-circle">
+                            <div id="player-token-rat" class="player-token">🦁</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Portfolio Area -->
+            <section class="portfolio-view hidden" id="tab-portfolio">
+                <div class="portfolio-header">
+                    <h2>Your Portfolio</h2>
+                    <p>Manage your acquired assets and wait for the right Market cards to realize capital gains.</p>
+                </div>
+                
+                <div class="portfolio-grid">
+                    <!-- Stocks / Mutual Funds -->
+                    <div class="portfolio-category">
+                        <h3>📈 Stocks & Funds</h3>
+                        <div class="asset-cards-container" id="portfolio-stocks">
+                            <div class="empty-state">No stocks in your portfolio yet.</div>
+                        </div>
+                    </div>
+
+                    <!-- Real Estate -->
+                    <div class="portfolio-category">
+                        <h3>🏠 Real Estate</h3>
+                        <div class="asset-cards-container" id="portfolio-real-estate">
+                            <div class="empty-state">No real estate properties acquired.</div>
+                        </div>
+                    </div>
+
+                    <!-- Businesses -->
+                    <div class="portfolio-category">
+                        <h3>🏢 Businesses</h3>
+                        <div class="asset-cards-container" id="portfolio-business">
+                            <div class="empty-state">No businesses owned.</div>
+                        </div>
+                    </div>
+
+                    <!-- Options (New 202) -->
+                    <div class="portfolio-category">
+                        <h3>🎟️ Active Options</h3>
+                        <div class="asset-cards-container" id="portfolio-options">
+                            <div class="empty-state">No active options.</div>
+                        </div>
+                    </div>
+
+                    <!-- Shorts (New 202) -->
+                    <div class="portfolio-category">
+                        <h3>📉 Short Positions</h3>
+                        <div class="asset-cards-container" id="portfolio-shorts">
+                            <div class="empty-state">No short positions.</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Market Action Area (Dynamically shown when a Market card is drawn) -->
+                <div id="market-action-banner" class="market-banner hidden">
+                    <div class="market-info">
+                        <h3>Market Opportunity active!</h3>
+                        <p id="market-target-desc">Buyers are looking for 3Br/2Ba. Sell your matching real estate now.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Stock Performance Tab -->
+            <section id="tab-stocks" class="tab-content hidden">
+                <div class="panel">
+                    <div class="modal-header" style="background: rgba(30, 41, 59, 1); border-bottom: 2px solid var(--accent-primary); border-radius: 8px 8px 0 0;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                            <h2 style="margin: 0; font-size: 1.2rem;">STOCK PERFORMANCE</h2>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <span style="font-size: 14px; color: var(--text-muted);">Switch Symbol:</span>
+                                <select id="tab-stock-dropdown" style="background: rgba(0,0,0,0.4); color: white; border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 12px; font-size: 14px;" onchange="updateStockTabUI(this.value)">
+                                    <option value="OK4U">OK4U</option>
+                                    <option value="MYT4U">MYT4U</option>
+                                    <option value="ON2U">ON2U</option>
+                                    <option value="GRO4U">GRO4U</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-body" style="padding: 25px;">
+                        <div id="tab-stock-chart" class="mini-chart-container" style="height: 550px; width: 100%; margin: 0 0 25px 0;">
+                            <!-- SVG Chart will be rendered here -->
+                        </div>
+                        
+                        <div class="table-container" style="background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--border-color);">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                                <thead>
+                                    <tr style="background: rgba(255,255,255,0.05);">
+                                        <th style="text-align: left; padding: 12px;">Position</th>
+                                        <th># Shares</th>
+                                        <th>Cost</th>
+                                        <th>Total Market Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tab-stock-positions-tbody">
+                                    <!-- Dynamic positions logic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Card Modal Overlay -->
+    <div id="card-modal" class="modal-overlay hidden">
+        <div class="modal-flip-container">
+            <div class="modal-flipper" id="modal-flipper">
+                <!-- FRONT: Opportunity Cards -->
+                <div class="modal-front modal-content card-display" id="modal-content-box">
+                    <div class="modal-header" id="card-header">
+                        <button class="modal-nav-arrow prev-arrow hidden" id="card-prev-btn">❮</button>
+                        <div>
+                            <span class="card-icon" id="card-icon">🤝</span>
+                            <h2 id="card-type">OPPORTUNITY</h2>
+                        </div>
+                        <button class="modal-nav-arrow next-arrow hidden" id="card-next-btn">❯</button>
+                        <button class="close-btn" id="btn-close-modal">✖</button>
+                    </div>
+                    <div class="modal-body">
+                        <h3 id="card-title">Card Title</h3>
+                        <p id="card-desc">Detailed card description goes here.</p>
+                        <div id="card-img-container" class="hidden" style="margin: 10px 0; text-align: center;">
+                            <img id="card-img" src="" alt="Card Image" style="max-width: 100%; max-height: 200px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                        </div>
+                        <div class="card-stats" id="card-stats">
+                            <!-- Dynamic stats -->
+                        </div>
+                    </div>
+                    <div class="modal-footer" id="card-actions">
+                        <!-- Action buttons -->
+                    </div>
+                </div>
+                
+                <!-- BACK: Bank / Repay -->
+                <div class="modal-back modal-content card-display" id="modal-back-box">
+                    <div class="modal-header" style="border-bottom-color: #0e7490;">
+                        <div>
+                            <span class="card-icon" id="back-icon">🏦</span>
+                            <h2 id="back-type">BANK</h2>
+                        </div>
+                        <button class="close-btn" id="btn-close-back">✖</button>
+                    </div>
+                    <div class="modal-body">
+                        <strong id="back-title" style="font-size: 18px; color: var(--text-primary); margin-bottom: 8px; display: block;">Action</strong>
+                        <div class="card-stats" id="back-body" style="display: flex; flex-direction: column; gap: 8px;">
+                            <!-- Dynamic Bank/Repay UI -->
+                        </div>
+                    </div>
+                    <div class="modal-footer" id="back-actions">
+                        <!-- Bank Actions -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+
+    <!-- Load data first, then app logic -->
+    <script src="js/cards_data.js?v=2"></script>
+    <script src="js/dreams_data.js?v=2"></script>
+    <script src="js/app.js?v=2"></script>
+</body>
+</html>
