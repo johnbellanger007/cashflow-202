@@ -1682,11 +1682,11 @@ function renderStockChart(symbol, containerId) {
     if (!container) return;
     
     const history = state.priceHistory[symbol] || [0];
-    const width = 600;
+    const width = 800;
     const height = 300;
-    const paddingX = 60;
-    const paddingY = 50;
-    const fontSize = 14;
+    const paddingX = 70;
+    const paddingY = 40;
+    const fontSize = 13;
     
     const maxP = Math.max(...history, 60);
     const minP = Math.min(...history, 10);
@@ -1719,19 +1719,17 @@ function renderStockChart(symbol, containerId) {
         let profitColor = 'var(--success-glow)';
         let lossColor = 'var(--danger-glow)';
         
-        // Draw the target line
         positionVisuals += `<line x1="${paddingX}" y1="${targetY}" x2="${width - paddingX}" y2="${targetY}" stroke="${isShort ? '#8b5cf6' : 'var(--warning)'}" stroke-width="2" stroke-dasharray="4,4" />`;
         positionVisuals += `<text x="${width - paddingX + 5}" y="${targetY + 4}" font-size="10" fill="var(--text-secondary)">TARGET</text>`;
 
-        // Profit/Loss Shading (simplified: fill between target and current)
         const rectY = Math.min(targetY, currentY);
         const rectH = Math.abs(targetY - currentY);
-        let color = '#334155'; // default muted
+        let color = '#334155';
 
         if ((isCall && currentPrice > targetPrice) || (isPut && currentPrice < targetPrice) || (isShort && currentPrice < targetPrice)) {
-            color = 'rgba(16, 185, 129, 0.2)'; // Profit
+            color = 'rgba(16, 185, 129, 0.2)';
         } else if ((isCall && currentPrice < targetPrice) || (isPut && currentPrice > targetPrice) || (isShort && currentPrice > targetPrice)) {
-            color = 'rgba(239, 68, 68, 0.2)'; // Loss
+            color = 'rgba(239, 68, 68, 0.2)';
         }
 
         positionVisuals += `<rect x="${paddingX}" y="${rectY}" width="${width - paddingX * 2}" height="${rectH}" fill="${color}" />`;
@@ -1744,11 +1742,11 @@ function renderStockChart(symbol, containerId) {
     for (let i = 0; i <= steps; i++) {
         const y = paddingY + (i * (height - paddingY * 2) / steps);
         const price = maxPrice - (i * range / steps);
-        gridLines += `<line x1="${paddingX}" y1="${y}" x2="${width - paddingX}" y2="${y}" stroke="rgba(255,255,255,0.05)" />`;
-        priceLabels += `<text x="${paddingX - 10}" y="${y + 4}" text-anchor="end" font-size="${fontSize}" fill="var(--text-secondary)">$${Math.round(price)}</text>`;
+        gridLines += `<line x1="${paddingX}" y1="${y}" x2="${width - paddingX}" y2="${y}" stroke="rgba(255,255,255,0.08)" />`;
+        priceLabels += `<text x="${paddingX - 12}" y="${y + 4}" text-anchor="end" font-size="${fontSize}" font-weight="600" fill="var(--text-secondary)">$${Math.round(price)}</text>`;
     }
 
-    let svg = `<svg viewBox="0 0 ${width} ${height}" class="stock-chart-svg" style="background: rgba(0,0,0,0.2); border-radius: 8px;">
+    let svg = `<svg viewBox="0 0 ${width} ${height}" class="stock-chart-svg" style="width: 100%; height: 260px; display: block; background: rgba(0,0,0,0.25); border-radius: 8px; margin-top: 10px;">
         ${gridLines}
         ${priceLabels}
         ${positionVisuals}

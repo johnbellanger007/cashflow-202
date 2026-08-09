@@ -380,19 +380,19 @@
                         </div>
                     </div>
                     
-                    <div class="modal-body" style="padding: 25px;">
-                        <div id="tab-stock-chart" class="mini-chart-container" style="width: 100%; margin: 0 0 25px 0;">
+                    <div class="modal-body" style="padding: 25px; display: flex; flex-direction: column; gap: 30px;">
+                        <div id="tab-stock-chart" class="mini-chart-container" style="width: 100%; margin: 0; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
                             <!-- SVG Chart will be rendered here -->
                         </div>
                         
-                        <div class="table-container" style="background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--border-color);">
+                        <div class="table-container" style="width: 100%; margin: 0; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); padding: 15px;">
                             <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
                                 <thead>
-                                    <tr style="background: rgba(255,255,255,0.05);">
+                                    <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
                                         <th style="text-align: left; padding: 12px;">Position</th>
-                                        <th># Shares</th>
-                                        <th>Cost</th>
-                                        <th>Total Market Value</th>
+                                        <th style="padding: 12px;"># Shares</th>
+                                        <th style="padding: 12px;">Cost</th>
+                                        <th style="padding: 12px;">Total Market Value</th>
                                     </tr>
                                 </thead>
                                 <tbody id="tab-stock-positions-tbody">
