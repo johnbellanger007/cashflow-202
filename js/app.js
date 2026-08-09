@@ -1665,7 +1665,7 @@ function updateTokenPosition() {
             ratToken.classList.remove('hidden');
             
             const angle = (p.boardPosition / RAT_RACE_TRACK.length) * 360;
-            const radius = 430; 
+            const radius = 278; // Exact center radius of the Rat Race SVG track ring (200px to 355px)
             const rad = (angle - 90) * (Math.PI / 180);
             const x = 845 + radius * Math.cos(rad);
             const y = 585 + radius * Math.sin(rad);
