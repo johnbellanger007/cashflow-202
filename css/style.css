@@ -531,6 +531,7 @@ td {
     border-radius: var(--radius-md);
     padding: 1rem;
     margin: 1rem 0;
+    overflow: hidden;
 }
 
 .chart-header {
@@ -546,7 +547,7 @@ td {
 
 .stock-chart-svg {
     width: 100%;
-    height: auto;
+    max-height: 260px;
     filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.2));
 }
 
