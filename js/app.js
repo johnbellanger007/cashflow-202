@@ -1691,11 +1691,12 @@ function renderFastTrack() {
         // Marker for YOUR DREAM
         if (i === state.dreamSpaceId) {
             el.innerHTML = `
-                <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:22px; filter:drop-shadow(0 0 5px #a855f7);">🎯</div>
-                <div class="ft-icon" style="font-size:24px; margin:0;">🌟</div>
-                <div style="font-size:11px; font-weight:800; color:#fff; text-transform:uppercase;">DREAM GOAL</div>
-                <div style="font-size:9px; line-height:1.1; font-weight:700; color:#fef08a; text-transform:uppercase;">${state.selectedDream?.title || 'DREAM'}</div>
-                <div style="font-size:9px; color:rgba(255,255,255,0.9);">${formatMoney(state.selectedDream?.cost || 100000)}</div>
+                <div style="font-size:11px; font-weight:800; color:#fff; text-transform:uppercase; letter-spacing:0.5px;">DREAM GOAL</div>
+                <div class="ft-icon" style="font-size:24px; margin:2px 0; display:flex; justify-content:center; align-items:center; gap:6px;">
+                    <span>🎯</span><span>🌟</span>
+                </div>
+                <div style="font-size:9.5px; line-height:1.15; font-weight:700; color:#fef08a; text-transform:uppercase;">${state.selectedDream?.title || 'DREAM'}</div>
+                <div style="font-size:9px; font-weight:600; color:rgba(255,255,255,0.95);">${formatMoney(state.selectedDream?.cost || 100000)}</div>
             `;
             el.style.border = '3px solid #a855f7';
             el.style.boxShadow = '0 0 20px rgba(168, 85, 247, 0.6)';
