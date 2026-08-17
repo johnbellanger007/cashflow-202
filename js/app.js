@@ -2872,140 +2872,244 @@ function showCardModal(packetId, spaceInfo) {
         const getTotalCost = () => (card.downPayment || card.cost || 0) * getQty();
 
         if (isShares && card.symbol) {
-            // Line 1: Current Stock Price Text
-            const priceRow = document.createElement('div');
-            priceRow.style.width = '100%';
-            priceRow.style.textAlign = 'center';
-            priceRow.style.fontSize = '14px';
-            priceRow.style.fontWeight = '700';
-            priceRow.style.color = 'var(--warning)';
-            priceRow.style.padding = '4px 0';
-            priceRow.style.borderBottom = '1px dashed rgba(255, 255, 255, 0.15)';
-            priceRow.textContent = `Current Stock Price: ${formatMoney(state.getCurrentPrice(card.symbol))}`;
-            actionsContainer.appendChild(priceRow);
+            let selectedStrategy = 'buy'; // 'buy', 'short', 'call', 'put'
+            const stockPrice = state.getCurrentPrice(card.symbol) || card.cost || 20;
+            const premPerShare = stockPrice >= 50 ? 5 : 1; // 202 Official Rules: $5/sh if stock >= $50, else $1/sh
 
-            // Line 2: Qty input on left, Pass button on right
-            const qtyPassRow = document.createElement('div');
-            qtyPassRow.style.display = 'flex';
-            qtyPassRow.style.justifyContent = 'space-between';
-            qtyPassRow.style.alignItems = 'center';
-            qtyPassRow.style.width = '100%';
+            // Trading Station Box
+            const tradingStation = document.createElement('div');
+            tradingStation.style.cssText = 'display: flex; flex-direction: column; gap: 12px; width: 100%; background: rgba(0,0,0,0.3); padding: 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);';
 
-            const qtyGroup = document.createElement('div');
-            qtyGroup.style.display = 'flex';
-            qtyGroup.style.alignItems = 'center';
-            qtyGroup.style.gap = '8px';
+            // 1. Strategy Selector Tabs
+            const stratRow = document.createElement('div');
+            stratRow.style.cssText = 'display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%;';
+            
+            const strategies = [
+                { id: 'buy', label: '🛒 BUY', color: '#10b981' },
+                { id: 'short', label: '📉 SHORT', color: '#8b5cf6' },
+                { id: 'call', label: '📈 CALL', color: '#38bdf8' },
+                { id: 'put', label: '🛡️ PUT', color: '#f59e0b' }
+            ];
 
-            const qtyLabel = document.createElement('span');
-            qtyLabel.textContent = 'Qty:';
-            qtyLabel.style.fontWeight = '600';
-            qtyLabel.style.fontSize = '14px';
-            qtyLabel.style.color = 'var(--text-primary)';
+            const stratButtons = {};
+            strategies.forEach(s => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.textContent = s.label;
+                b.style.cssText = `padding: 8px 4px; font-size: 11px; font-weight: 700; border-radius: 6px; cursor: pointer; border: 1px solid ${s.color}; background: transparent; color: white; transition: all 0.2s;`;
+                b.onclick = () => {
+                    selectedStrategy = s.id;
+                    updateTradingUI();
+                };
+                stratButtons[s.id] = b;
+                stratRow.appendChild(b);
+            });
+            tradingStation.appendChild(stratRow);
 
+            // 2. Quantity Input & Quick buttons
+            const qtyRow = document.createElement('div');
+            qtyRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;';
+            
+            const qtyLeft = document.createElement('div');
+            qtyLeft.style.cssText = 'display: flex; align-items: center; gap: 8px;';
+            qtyLeft.innerHTML = `<span style="font-weight: 600; font-size: 13px; color: var(--text-secondary);">Shares:</span>`;
+            
             qtyInput = document.createElement('input');
-            qtyInput.type = 'number'; qtyInput.value = '100'; qtyInput.step = '10'; qtyInput.min = '10';
-            qtyInput.className = 'input-small';
-            qtyInput.style.width = '100px';
-            qtyInput.style.padding = '6px 10px';
-            qtyInput.style.borderRadius = '6px';
-            qtyInput.style.border = '1px solid var(--border-color)';
-            qtyInput.style.background = 'rgba(0,0,0,0.4)';
-            qtyInput.style.color = 'white';
-            qtyInput.style.fontSize = '14px';
+            qtyInput.type = 'number';
+            qtyInput.value = '100';
+            qtyInput.min = '10';
+            qtyInput.step = '10';
+            qtyInput.style.cssText = 'width: 80px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.5); color: white; font-size: 14px; font-weight: 700; text-align: center;';
+            qtyInput.oninput = () => updateTradingUI();
+            qtyLeft.appendChild(qtyInput);
+            qtyRow.appendChild(qtyLeft);
 
-            qtyGroup.appendChild(qtyLabel);
-            qtyGroup.appendChild(qtyInput);
-            qtyPassRow.appendChild(qtyGroup);
+            const quickButtons = document.createElement('div');
+            quickButtons.style.cssText = 'display: flex; gap: 4px;';
+            [100, 200, 500].forEach(q => {
+                const qb = document.createElement('button');
+                qb.type = 'button';
+                qb.textContent = `+${q}`;
+                qb.style.cssText = 'padding: 4px 8px; font-size: 11px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: white; cursor: pointer;';
+                qb.onclick = () => {
+                    qtyInput.value = (parseInt(qtyInput.value) || 0) + q;
+                    updateTradingUI();
+                };
+                quickButtons.appendChild(qb);
+            });
+            
+            const maxBtn = document.createElement('button');
+            maxBtn.type = 'button';
+            maxBtn.textContent = 'MAX';
+            maxBtn.style.cssText = 'padding: 4px 8px; font-size: 11px; font-weight: 800; border-radius: 4px; border: 1px solid var(--warning); background: rgba(245,158,11,0.15); color: var(--warning); cursor: pointer;';
+            maxBtn.onclick = () => {
+                let maxQty = 100;
+                if (selectedStrategy === 'buy') {
+                    maxQty = Math.max(10, Math.floor(p.cash / stockPrice / 10) * 10);
+                } else if (selectedStrategy === 'call' || selectedStrategy === 'put') {
+                    maxQty = Math.max(10, Math.floor(p.cash / premPerShare / 10) * 10);
+                } else if (selectedStrategy === 'short') {
+                    maxQty = 1000;
+                }
+                qtyInput.value = maxQty;
+                updateTradingUI();
+            };
+            quickButtons.appendChild(maxBtn);
+            qtyRow.appendChild(quickButtons);
+            tradingStation.appendChild(qtyRow);
 
+            // 3. Live Simulation Summary Box
+            const summaryBox = document.createElement('div');
+            summaryBox.style.cssText = 'padding: 10px 12px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); font-size: 12px; line-height: 1.4;';
+            tradingStation.appendChild(summaryBox);
+
+            // 4. Action Buttons (Confirm Order vs Pass)
+            const actionsRow = document.createElement('div');
+            actionsRow.style.cssText = 'display: flex; gap: 10px; width: 100%; margin-top: 4px;';
+            
+            const confirmBtn = document.createElement('button');
+            confirmBtn.className = 'action-btn success';
+            confirmBtn.style.cssText = 'flex: 2; padding: 10px 16px; font-size: 13px; font-weight: 700;';
+            
             const passBtn = document.createElement('button');
             passBtn.className = 'btn-secondary';
-            passBtn.textContent = 'PASS DEAL';
-            passBtn.style.padding = '8px 20px';
-            passBtn.onclick = () => { closeModal(modal); setTimeout(() => initiateMarketPhase(), 500); };
-            qtyPassRow.appendChild(passBtn);
-
-            actionsContainer.appendChild(qtyPassRow);
-
-            // Line 3: Trading Action Buttons (BUY ASSET, SHORT, CALL)
-            const buttonsRow = document.createElement('div');
-            buttonsRow.style.display = 'flex';
-            buttonsRow.style.gap = '10px';
-            buttonsRow.style.width = '100%';
-
-            const buyBtn = document.createElement('button');
-            buyBtn.className = 'action-btn success';
-            buyBtn.textContent = 'BUY ASSET';
-            buyBtn.style.flex = '1';
-            buyBtn.style.padding = '10px 14px';
-            buyBtn.style.fontSize = '13px';
-            buyBtn.onclick = () => {
-                if (p.cash >= getTotalCost()) {
-                    buyAsset(card, modal, getQty());
-                    setTimeout(() => initiateMarketPhase(), 500);
-                }
-            };
-            buttonsRow.appendChild(buyBtn);
-
-            const shortBtn = document.createElement('button');
-            shortBtn.className = 'action-btn';
-            shortBtn.textContent = 'SHORT';
-            shortBtn.style.background = '#8b5cf6';
-            shortBtn.style.flex = '1';
-            shortBtn.style.padding = '10px 14px';
-            shortBtn.style.fontSize = '13px';
-            shortBtn.onclick = () => {
-                const q = getQty();
-                p.assets.shorts.push({ symbol: card.symbol, quantity: q, salePrice: card.cost });
-                p.cash += q * card.cost;
-                updateUI();
+            passBtn.textContent = 'Pass Deal';
+            passBtn.style.cssText = 'flex: 1; padding: 10px 14px; font-size: 13px;';
+            passBtn.onclick = () => {
                 closeModal(modal);
                 setTimeout(() => initiateMarketPhase(), 500);
             };
-            buttonsRow.appendChild(shortBtn);
 
-            const callBtn = document.createElement('button');
-            callBtn.className = 'action-btn';
-            callBtn.textContent = 'CALL';
-            callBtn.style.background = '#10b981';
-            callBtn.style.flex = '1';
-            callBtn.style.padding = '10px 14px';
-            callBtn.style.fontSize = '13px';
-            callBtn.onclick = () => {
-                const q = getQty();
-                const prem = card.cost >= 50 ? 5 : 1;
-                if (p.cash >= q * prem) {
-                    p.cash -= q * prem;
-                    p.assets.options.push({ symbol: card.symbol, type: 'call', strike: card.cost, quantity: q, expiry: 4 });
-                    updateUI();
-                    closeModal(modal);
-                    setTimeout(() => initiateMarketPhase(), 500);
+            actionsRow.appendChild(confirmBtn);
+            actionsRow.appendChild(passBtn);
+            tradingStation.appendChild(actionsRow);
+
+            actionsContainer.appendChild(tradingStation);
+
+            function updateTradingUI() {
+                const q = Math.max(1, parseInt(qtyInput.value) || 0);
+                
+                // Highlight active strategy button
+                strategies.forEach(s => {
+                    const btn = stratButtons[s.id];
+                    if (s.id === selectedStrategy) {
+                        btn.style.background = s.color;
+                        btn.style.color = '#000';
+                        btn.style.boxShadow = `0 0 10px ${s.color}`;
+                    } else {
+                        btn.style.background = 'transparent';
+                        btn.style.color = 'white';
+                        btn.style.boxShadow = 'none';
+                    }
+                });
+
+                let cost = 0;
+                let cashChange = 0;
+                let desc = '';
+                let isValid = true;
+                let errorMsg = '';
+
+                if (selectedStrategy === 'buy') {
+                    cost = stockPrice * q;
+                    cashChange = -cost;
+                    desc = `Achat au comptant de <strong>${q} actions</strong> à ${formatMoney(stockPrice)}/action.<br>Coût total : <strong class="warning">${formatMoney(cost)}</strong>`;
+                    if (p.cash < cost) {
+                        isValid = false;
+                        errorMsg = `⚠️ Liquidités insuffisantes (Manque ${formatMoney(cost - p.cash)})`;
+                    }
+                } else if (selectedStrategy === 'short') {
+                    const proceeds = stockPrice * q;
+                    cashChange = proceeds;
+                    desc = `Vente à découvert de <strong>${q} actions</strong> à ${formatMoney(stockPrice)}.<br>Cash encaissé immédiatement : <strong class="success">+${formatMoney(proceeds)}</strong><br><small style="color:var(--text-muted);">Obligation de rachat futur si le cours baisse ou monte.</small>`;
+                } else if (selectedStrategy === 'call') {
+                    cost = premPerShare * q;
+                    cashChange = -cost;
+                    desc = `Option d'Achat (CALL) : Droit d'acheter <strong>${q} actions</strong> à <strong>${formatMoney(stockPrice)}</strong> pendant 4 tours.<br>Prime totale à payer : <strong class="warning">${formatMoney(cost)}</strong> (${formatMoney(premPerShare)}/action)`;
+                    if (p.cash < cost) {
+                        isValid = false;
+                        errorMsg = `⚠️ Liquidités insuffisantes pour la prime (Manque ${formatMoney(cost - p.cash)})`;
+                    }
+                } else if (selectedStrategy === 'put') {
+                    cost = premPerShare * q;
+                    cashChange = -cost;
+                    desc = `Option de Vente (PUT) : Droit de vendre <strong>${q} actions</strong> à <strong>${formatMoney(stockPrice)}</strong> pendant 4 tours.<br>Prime totale à payer : <strong class="warning">${formatMoney(cost)}</strong> (${formatMoney(premPerShare)}/action)`;
+                    if (p.cash < cost) {
+                        isValid = false;
+                        errorMsg = `⚠️ Liquidités insuffisantes pour la prime (Manque ${formatMoney(cost - p.cash)})`;
+                    }
                 }
-            };
-            buttonsRow.appendChild(callBtn);
-            actionsContainer.appendChild(buttonsRow);
+
+                const projectedCash = p.cash + cashChange;
+                summaryBox.innerHTML = `
+                    <div style="margin-bottom: 6px;">${desc}</div>
+                    <div style="display:flex; justify-content:space-between; border-top:1px dashed rgba(255,255,255,0.15); padding-top:6px; font-size:11px;">
+                        <span>Votre Cash : <strong>${formatMoney(p.cash)}</strong></span>
+                        <span>Solde après ordre : <strong style="color:${projectedCash < 0 ? 'var(--danger)' : 'var(--success)'};">${formatMoney(projectedCash)}</strong></span>
+                    </div>
+                    ${errorMsg ? `<div style="color:var(--danger); font-weight:700; margin-top:5px;">${errorMsg}</div>` : ''}
+                `;
+
+                confirmBtn.disabled = !isValid;
+                if (!isValid) {
+                    confirmBtn.style.opacity = '0.5';
+                    confirmBtn.textContent = `❌ Fonds Insuffisants`;
+                    confirmBtn.onclick = null;
+                } else {
+                    confirmBtn.style.opacity = '1';
+                    confirmBtn.textContent = `✅ Confirmer l'Ordre (${selectedStrategy.toUpperCase()})`;
+                    confirmBtn.onclick = () => {
+                        SoundManager.playSpend();
+                        if (selectedStrategy === 'buy') {
+                            buyAsset(card, modal, q);
+                        } else if (selectedStrategy === 'short') {
+                            p.assets.shorts.push({ symbol: card.symbol, quantity: q, salePrice: stockPrice });
+                            p.cash += (stockPrice * q);
+                            updateUI();
+                            closeModal(modal);
+                        } else if (selectedStrategy === 'call' || selectedStrategy === 'put') {
+                            p.cash -= cost;
+                            p.assets.options.push({ symbol: card.symbol, type: selectedStrategy, strike: stockPrice, quantity: q, expiry: 4, cost: cost });
+                            updateUI();
+                            closeModal(modal);
+                        }
+                        setTimeout(() => initiateMarketPhase(), 500);
+                    };
+                }
+            }
+
+            // Initial render of trading UI
+            updateTradingUI();
 
             if (p.isAI) {
                 setTimeout(() => {
-                    const cost = card.cost || 20;
-                    if (cost <= 20 && p.cash >= cost * 100 * 1.5) {
-                        buyBtn.click();
-                    } else if (cost >= 40 && p.cash >= 1000) {
-                        if (Math.random() > 0.5) callBtn.click();
-                        else shortBtn.click();
+                    const price = stockPrice;
+                    if (price <= 20 && p.cash >= price * 100 * 1.5) {
+                        selectedStrategy = 'buy';
+                        qtyInput.value = '100';
+                    } else if (price >= 40 && p.cash >= 1000) {
+                        selectedStrategy = Math.random() > 0.5 ? 'call' : 'short';
+                        qtyInput.value = '100';
                     } else {
                         passBtn.click();
+                        return;
                     }
+                    updateTradingUI();
+                    if (!confirmBtn.disabled) confirmBtn.click();
+                    else passBtn.click();
                 }, 1200);
             }
-        } else {
             // Standard Deals (Real Estate, Business, etc.)
+            const totalCost = getTotalCost();
+            const canAfford = p.cash >= totalCost;
             const buyBtn = document.createElement('button');
-            buyBtn.className = 'action-btn success';
-            buyBtn.textContent = 'BUY ASSET';
+            buyBtn.className = `action-btn success ${canAfford ? '' : 'disabled'}`;
+            buyBtn.textContent = canAfford ? `BUY ASSET (${formatMoney(totalCost)})` : `BUY ASSET (${formatMoney(totalCost)})`;
             buyBtn.onclick = () => {
-                if (p.cash >= getTotalCost()) {
+                if (p.cash >= totalCost) {
                     buyAsset(card, modal, getQty());
                     setTimeout(() => initiateMarketPhase(), 500);
+                } else {
+                    showAlertCard("Fonds insuffisants", `Il vous manque ${formatMoney(totalCost - p.cash)} pour acquérir cet actif. Vous pouvez emprunter à la banque ou passer.`, "🚫", "var(--danger)");
                 }
             };
 
