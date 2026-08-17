@@ -780,6 +780,8 @@ function updateUI() {
 
     // 2. Income Section
     document.getElementById('salary-val').textContent = formatMoney(state.job.salary);
+    const passiveIncomeVal = document.getElementById('passive-income-val');
+    if (passiveIncomeVal) passiveIncomeVal.textContent = formatMoney(state.getPassiveIncome());
     document.getElementById('total-income-val').textContent = formatMoney(state.getTotalIncome());
     
     // Lists logic for passive income
@@ -1037,122 +1039,111 @@ function updatePortfolioUI() {
     const stocksContainer = document.getElementById('portfolio-stocks');
     const realEstateContainer = document.getElementById('portfolio-real-estate');
     const businessContainer = document.getElementById('portfolio-business');
+    const optionsContainer = document.getElementById('portfolio-options');
+    const shortsContainer = document.getElementById('portfolio-shorts');
     
     // Render Stocks
-    if (state.assets.stocks.length === 0) {
-        stocksContainer.innerHTML = '<div class="empty-state">No stocks in your portfolio yet.</div>';
-    } else {
-        stocksContainer.innerHTML = state.assets.stocks.map((s, idx) => `
-            <div class="asset-card">
-                <div class="asset-card-header">
-                    <span>Stock</span>
-                    <span class="asset-card-symbol">${s.symbol}</span>
+    if (stocksContainer) {
+        if (!state.assets.stocks || state.assets.stocks.length === 0) {
+            stocksContainer.innerHTML = '<div class="empty-state">No stocks in your portfolio yet.</div>';
+        } else {
+            stocksContainer.innerHTML = state.assets.stocks.map((s, idx) => `
+                <div class="asset-card">
+                    <div class="asset-card-header">
+                        <span>Stock</span>
+                        <span class="asset-card-symbol">${s.symbol}</span>
+                    </div>
+                    <div class="asset-card-stats">
+                        <div class="asset-card-stat"><span class="label">Shares</span><span>${s.shares}</span></div>
+                        <div class="asset-card-stat"><span class="label">Cost/Share</span><span>${formatMoney(s.cost)}</span></div>
+                        ${s.dividend ? `<div class="asset-card-stat"><span class="label">Dividend</span><span class="success">+${formatMoney(s.dividend)}</span></div>` : ''}
+                    </div>
                 </div>
-                <div class="asset-card-stats">
-                    <div class="asset-card-stat"><span class="label">Shares</span><span>${s.shares}</span></div>
-                    <div class="asset-card-stat"><span class="label">Cost/Share</span><span>${formatMoney(s.cost)}</span></div>
-                    ${s.dividend ? `<div class="asset-card-stat"><span class="label">Dividend</span><span class="success">+${formatMoney(s.dividend)}</span></div>` : ''}
-                </div>
-            </div>
-        `).join('');
+            `).join('');
+        }
     }
 
     // Render Real Estate
-    if (state.assets.realEstate.length === 0) {
-        realEstateContainer.innerHTML = '<div class="empty-state">No real estate properties acquired.</div>';
-    } else {
-        realEstateContainer.innerHTML = state.assets.realEstate.map((re, idx) => `
-            <div class="asset-card">
-                <div class="asset-card-header">
-                    <span>${re.type}</span>
+    if (realEstateContainer) {
+        if (!state.assets.realEstate || state.assets.realEstate.length === 0) {
+            realEstateContainer.innerHTML = '<div class="empty-state">No real estate properties acquired.</div>';
+        } else {
+            realEstateContainer.innerHTML = state.assets.realEstate.map((re, idx) => `
+                <div class="asset-card">
+                    <div class="asset-card-header">
+                        <span>${re.type}</span>
+                    </div>
+                    <div class="asset-card-stats">
+                        <div class="asset-card-stat"><span class="label">Cost</span><span>${formatMoney(re.cost)}</span></div>
+                        <div class="asset-card-stat"><span class="label">Down Pay</span><span>${formatMoney(re.downPayment)}</span></div>
+                        <div class="asset-card-stat"><span class="label">Cashflow</span><span class="success">+${formatMoney(re.cashflow)}</span></div>
+                    </div>
                 </div>
-                <div class="asset-card-stats">
-                    <div class="asset-card-stat"><span class="label">Cost</span><span>${formatMoney(re.cost)}</span></div>
-                    <div class="asset-card-stat"><span class="label">Down Pay</span><span>${formatMoney(re.downPayment)}</span></div>
-                    <div class="asset-card-stat"><span class="label">Cashflow</span><span class="success">+${formatMoney(re.cashflow)}</span></div>
-                </div>
-            </div>
-        `).join('');
+            `).join('');
+        }
     }
 
     // Render Business
-    if (state.assets.business.length === 0) {
-        businessContainer.innerHTML = '<div class="empty-state">No businesses owned.</div>';
-    } else {
-        businessContainer.innerHTML = state.assets.business.map((biz, idx) => `
-            <div class="asset-card">
-                <div class="asset-card-header">
-                    <span>${biz.type}</span>
+    if (businessContainer) {
+        if (!state.assets.business || state.assets.business.length === 0) {
+            businessContainer.innerHTML = '<div class="empty-state">No businesses owned.</div>';
+        } else {
+            businessContainer.innerHTML = state.assets.business.map((biz, idx) => `
+                <div class="asset-card">
+                    <div class="asset-card-header">
+                        <span>${biz.type}</span>
+                    </div>
+                    <div class="asset-card-stats">
+                        <div class="asset-card-stat"><span class="label">Cost</span><span>${formatMoney(biz.cost)}</span></div>
+                        <div class="asset-card-stat"><span class="label">Down Pay</span><span>${formatMoney(biz.downPayment)}</span></div>
+                        <div class="asset-card-stat"><span class="label">Cashflow</span><span class="success">+${formatMoney(biz.cashflow)}</span></div>
+                    </div>
                 </div>
-                <div class="asset-card-stats">
-                    <div class="asset-card-stat"><span class="label">Cost</span><span>${formatMoney(biz.cost)}</span></div>
-                    <div class="asset-card-stat"><span class="label">Down Pay</span><span>${formatMoney(biz.downPayment)}</span></div>
-                    <div class="asset-card-stat"><span class="label">Cashflow</span><span class="success">+${formatMoney(biz.cashflow)}</span></div>
-                </div>
-            </div>
-        `).join('');
+            `).join('');
+        }
     }
 
     // New 202: Render Options
-    const optionsContainer = document.getElementById('portfolio-options');
-    if (state.assets.options.length === 0) {
-        optionsContainer.innerHTML = '<div class="empty-state">No active options.</div>';
-    } else {
-        optionsContainer.innerHTML = state.assets.options.map((o, idx) => {
-            const currentPrice = state.getCurrentPrice(o.symbol);
-            const isCall = o.type === 'call';
-            const canExercise = (isCall && currentPrice > o.strike) || (!isCall && currentPrice < o.strike);
-            const spread = isCall ? (currentPrice - o.strike) : (o.strike - currentPrice);
-            const potentialGain = spread * o.quantity;
-
-            return `
-            <div class="asset-card">
-                <div class="asset-card-header" style="border-bottom-color: ${isCall ? '#10b981' : '#ec4899'}">
-                    <span>${o.type.toUpperCase()} Option</span>
-                    <span class="asset-card-symbol">${o.symbol}</span>
+    if (optionsContainer) {
+        if (!state.assets.options || state.assets.options.length === 0) {
+            optionsContainer.innerHTML = '<div class="empty-state">No active options.</div>';
+        } else {
+            optionsContainer.innerHTML = state.assets.options.map((o, idx) => `
+                <div class="asset-card">
+                    <div class="asset-card-header">
+                        <span>Option</span>
+                        <span class="asset-card-symbol" style="color:${o.type === 'call' ? '#38bdf8' : '#f59e0b'};">${o.symbol} (${o.type.toUpperCase()})</span>
+                    </div>
+                    <div class="asset-card-stats">
+                        <div class="asset-card-stat"><span class="label">Qty</span><span>${o.quantity}</span></div>
+                        <div class="asset-card-stat"><span class="label">Strike</span><span>${formatMoney(o.strike)}</span></div>
+                        <div class="asset-card-stat"><span class="label">Cost</span><span>${formatMoney(o.cost)}</span></div>
+                        <div class="asset-card-stat"><span class="label">Expiry</span><span>${o.expiry} turns</span></div>
+                    </div>
                 </div>
-                <div class="asset-card-stats">
-                    <div class="asset-card-stat"><span class="label">Qty</span><span>${o.quantity}</span></div>
-                    <div class="asset-card-stat"><span class="label">Strike</span><span>${formatMoney(o.strike)}</span></div>
-                    <div class="asset-card-stat"><span class="label">Expiry</span><span>${o.expiry} turns</span></div>
-                    ${canExercise ? `<div class="asset-card-stat"><span class="label">Gains</span><span class="success">${formatMoney(potentialGain)}</span></div>` : ''}
-                </div>
-                <div class="asset-card-stat" style="grid-column: span 2; font-size: 0.8rem; color: var(--text-secondary); text-align: center; margin-top: 5px;">
-                    Must exercise when price is drawn.
-                </div>
-            </div>`;
-        }).join('');
+            `).join('');
+        }
     }
 
     // New 202: Render Shorts
-    const shortsContainer = document.getElementById('portfolio-shorts');
-    if (state.assets.shorts.length === 0) {
-        shortsContainer.innerHTML = '<div class="empty-state">No short positions.</div>';
-    } else {
-        shortsContainer.innerHTML = state.assets.shorts.map((s, idx) => {
-            const currentPrice = state.getCurrentPrice(s.symbol);
-            const profit = (s.salePrice - currentPrice) * s.quantity;
-            const isProfitable = profit > 0;
-
-            return `
-            <div class="asset-card">
-                <div class="asset-card-header" style="border-bottom-color: #8b5cf6">
-                    <span>Short Position</span>
-                    <span class="asset-card-symbol">${s.symbol}</span>
+    if (shortsContainer) {
+        if (!state.assets.shorts || state.assets.shorts.length === 0) {
+            shortsContainer.innerHTML = '<div class="empty-state">No short positions.</div>';
+        } else {
+            shortsContainer.innerHTML = state.assets.shorts.map((sh, idx) => `
+                <div class="asset-card">
+                    <div class="asset-card-header">
+                        <span>Short</span>
+                        <span class="asset-card-symbol" style="color:#8b5cf6;">${sh.symbol}</span>
+                    </div>
+                    <div class="asset-card-stats">
+                        <div class="asset-card-stat"><span class="label">Qty</span><span>${sh.quantity}</span></div>
+                        <div class="asset-card-stat"><span class="label">Sale Price</span><span>${formatMoney(sh.salePrice)}</span></div>
+                        <div class="asset-card-stat"><span class="label">Current</span><span>${formatMoney(state.getCurrentPrice(sh.symbol))}</span></div>
+                    </div>
                 </div>
-                <div class="asset-card-stats">
-                    <div class="asset-card-stat"><span class="label">Qty</span><span>${s.quantity}</span></div>
-                    <div class="asset-card-stat"><span class="label">Sale Price</span><span>${formatMoney(s.salePrice)}</span></div>
-                    <div class="asset-card-stat"><span class="label">Market</span><span>${formatMoney(currentPrice)}</span></div>
-                    <div class="asset-card-stat"><span class="label">Total +/-</span><span class="${isProfitable ? 'success' : 'danger'}">${formatMoney(profit)}</span></div>
-                </div>
-                <button class="action-btn mini-btn primary" 
-                        onclick="state.buyBackShort(${idx})" 
-                        style="width: 100%; margin-top: 10px; background: #8b5cf6;">
-                    Settle (Buy Back)
-                </button>
-            </div>`;
-        }).join('');
+            `).join('');
+        }
     }
 }
 
@@ -1412,18 +1403,7 @@ function confirmDream() {
     }, 500);
 }
 
-// Initialize on load
-window.addEventListener('DOMContentLoaded', () => {
-    initTabs();
-    
-    // Assign navigation arrow clicks
-    document.getElementById('card-prev-btn').onclick = () => nextDream(-1);
-    document.getElementById('card-next-btn').onclick = () => nextDream(1);
-    
-    // Render the board and background UI first so it's visible clearly
-    renderBoard();
-    updateUI();
-});
+// Unified initialization handled at bottom of file
 
 function initTabs() {
     const navBtns = document.querySelectorAll('.nav-btn[data-tab]');
@@ -3543,16 +3523,25 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCardsData();
     initTabs();
     
-    // makeModalDraggable('card-modal'); // Correct draggable logic already applied at line 2846
+    // Assign navigation arrow clicks for dream selector
+    const prevBtn = document.getElementById('card-prev-btn');
+    if (prevBtn) prevBtn.onclick = () => nextDream(-1);
+    const nextBtn = document.getElementById('card-next-btn');
+    if (nextBtn) nextBtn.onclick = () => nextDream(1);
+
     forceNewGame();
 
+    const rollBtn = document.getElementById('btn-roll-dice');
+    if (rollBtn) rollBtn.addEventListener('click', rollDice);
 
-    document.getElementById('btn-roll-dice').addEventListener('click', rollDice);
-    document.getElementById('btn-close-modal').addEventListener('click', () => {
-        closeModal(document.getElementById('card-modal'));
-    });
+    const closeBtn = document.getElementById('btn-close-modal');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            closeModal(document.getElementById('card-modal'));
+        });
+    }
     const backCloseBtn = document.getElementById('btn-close-back');
-    if(backCloseBtn) {
+    if (backCloseBtn) {
         backCloseBtn.addEventListener('click', () => {
             closeModal(document.getElementById('card-modal'));
         });
@@ -3730,9 +3719,8 @@ function forceNewGame() {
     updateUI();
     updateTokenPosition();
     
-    // 5. Show Dream Selector with a larger delay to allow rendering
-    console.log("forceNewGame: Scheduling showDreamSelector in 1500ms");
-    setTimeout(showDreamSelector, 1500);
+    // 5. Show Dream Selector immediately
+    setTimeout(showDreamSelector, 200);
 }
 
 function startNewGame() {
