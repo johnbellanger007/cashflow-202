@@ -1813,38 +1813,66 @@ function renderStockChart(symbol, containerId) {
         return `${x},${y}`;
     }).join(' ');
 
-    // Highlight active positions
+    // Highlight active positions (Calls, Puts, Shorts, Stock purchases)
     let positionVisuals = '';
-    const activeOption = state.assets.options.find(o => o.symbol === symbol);
-    const activeShort = state.assets.shorts.find(s => s.symbol === symbol);
+    const p = state.getCurrentPlayer();
+    const activeOptions = (p.assets.options || []).filter(o => o.symbol === symbol);
+    const activeShorts = (p.assets.shorts || []).filter(s => s.symbol === symbol);
+    const activeStocks = (p.assets.stocks || []).filter(s => s.symbol === symbol);
     const currentPrice = history[history.length - 1];
+    const currentY = getY(currentPrice);
 
-    if (activeOption || activeShort) {
-        const targetPrice = activeOption ? activeOption.strike : activeShort.salePrice;
+    // 1. Render Options (Calls & Puts)
+    activeOptions.forEach((opt, idx) => {
+        const targetPrice = opt.strike;
         const targetY = getY(targetPrice);
-        const currentY = getY(currentPrice);
-        const isCall = activeOption ? activeOption.type === 'call' : false;
-        const isPut = activeOption ? activeOption.type === 'put' : false;
-        const isShort = !!activeShort;
+        const isCall = opt.type === 'call';
+        const color = isCall ? '#38bdf8' : '#f59e0b';
+        const isITM = isCall ? (currentPrice > targetPrice) : (currentPrice < targetPrice);
+        const profit = (isCall ? (currentPrice - targetPrice) : (targetPrice - currentPrice)) * opt.quantity;
+        const shadeColor = isITM ? 'rgba(16, 185, 129, 0.18)' : 'rgba(239, 68, 68, 0.15)';
 
-        let profitColor = 'var(--success-glow)';
-        let lossColor = 'var(--danger-glow)';
+        // Shaded region between current price and strike
+        const rectY = Math.min(targetY, currentY);
+        const rectH = Math.max(Math.abs(targetY - currentY), 2);
+        positionVisuals += `<rect x="${paddingX}" y="${rectY}" width="${width - paddingX * 2}" height="${rectH}" fill="${shadeColor}" />`;
+
+        // Horizontal Strike Line
+        positionVisuals += `<line x1="${paddingX}" y1="${targetY}" x2="${width - paddingX}" y2="${targetY}" stroke="${color}" stroke-width="2" stroke-dasharray="5,4" />`;
         
-        positionVisuals += `<line x1="${paddingX}" y1="${targetY}" x2="${width - paddingX}" y2="${targetY}" stroke="${isShort ? '#8b5cf6' : 'var(--warning)'}" stroke-width="2" stroke-dasharray="4,4" />`;
-        positionVisuals += `<text x="${width - paddingX + 5}" y="${targetY + 4}" font-size="10" fill="var(--text-secondary)">TARGET</text>`;
+        // Label on left & right
+        const typeLabel = isCall ? 'CALL STRIKE' : 'PUT STRIKE';
+        positionVisuals += `<text x="${paddingX + 6}" y="${targetY - 5}" font-size="11" font-weight="700" fill="${color}">${typeLabel} $${targetPrice}</text>`;
+        positionVisuals += `<text x="${width - paddingX - 6}" y="${targetY - 5}" text-anchor="end" font-size="11" font-weight="700" fill="${isITM ? 'var(--success)' : 'var(--danger)'}">${isITM ? '▲ IN THE MONEY' : '▼ OUT OF THE MONEY'} (${formatMoney(profit)})</text>`;
+    });
+
+    // 2. Render Shorts
+    activeShorts.forEach((sh, idx) => {
+        const entryPrice = sh.salePrice;
+        const targetY = getY(entryPrice);
+        const isITM = currentPrice < entryPrice;
+        const profit = (entryPrice - currentPrice) * sh.quantity;
+        const shadeColor = isITM ? 'rgba(16, 185, 129, 0.18)' : 'rgba(239, 68, 68, 0.15)';
 
         const rectY = Math.min(targetY, currentY);
-        const rectH = Math.abs(targetY - currentY);
-        let color = '#334155';
+        const rectH = Math.max(Math.abs(targetY - currentY), 2);
+        positionVisuals += `<rect x="${paddingX}" y="${rectY}" width="${width - paddingX * 2}" height="${rectH}" fill="${shadeColor}" />`;
 
-        if ((isCall && currentPrice > targetPrice) || (isPut && currentPrice < targetPrice) || (isShort && currentPrice < targetPrice)) {
-            color = 'rgba(16, 185, 129, 0.2)';
-        } else if ((isCall && currentPrice < targetPrice) || (isPut && currentPrice > targetPrice) || (isShort && currentPrice > targetPrice)) {
-            color = 'rgba(239, 68, 68, 0.2)';
-        }
+        positionVisuals += `<line x1="${paddingX}" y1="${targetY}" x2="${width - paddingX}" y2="${targetY}" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="5,4" />`;
+        positionVisuals += `<text x="${paddingX + 6}" y="${targetY - 5}" font-size="11" font-weight="700" fill="#8b5cf6">SHORT ENTRY $${entryPrice}</text>`;
+        positionVisuals += `<text x="${width - paddingX - 6}" y="${targetY - 5}" text-anchor="end" font-size="11" font-weight="700" fill="${isITM ? 'var(--success)' : 'var(--danger)'}">${isITM ? '▲ PROFIT' : '▼ LOSS'} (${formatMoney(profit)})</text>`;
+    });
 
-        positionVisuals += `<rect x="${paddingX}" y="${rectY}" width="${width - paddingX * 2}" height="${rectH}" fill="${color}" />`;
-    }
+    // 3. Render Stock Buy Price
+    activeStocks.forEach((stk, idx) => {
+        const costPrice = stk.cost;
+        const targetY = getY(costPrice);
+        const isITM = currentPrice > costPrice;
+        const profit = (currentPrice - costPrice) * stk.shares;
+
+        positionVisuals += `<line x1="${paddingX}" y1="${targetY}" x2="${width - paddingX}" y2="${targetY}" stroke="#10b981" stroke-width="1.5" stroke-dasharray="3,3" />`;
+        positionVisuals += `<text x="${paddingX + 6}" y="${targetY - 5}" font-size="10" font-weight="600" fill="#10b981">BUY AVG $${Math.round(costPrice)}</text>`;
+    });
 
     // Generate Grid Lines and Labels
     let gridLines = '';
