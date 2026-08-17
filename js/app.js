@@ -896,11 +896,12 @@ function updateUI() {
     if (p.isFastTrack && (hasEnoughIncome || hasMyDream)) {
         SoundManager.playTone(800, 'sine', 0.5);
         const isAIWinner = p.isAI;
+        const reason = hasMyDream ? "Achat de son Rêve" : "Revenus de $50 000/mois atteints";
         showAlertCard(
-            isAIWinner ? "💀 YOU LOST! 💀" : "🏆 ULTIMATE VICTORY! 🏆",
+            isAIWinner ? "💀 VOUS AVEZ PERDU ! 💀" : "🏆 VICTOIRE SUPRÊME ! 🏆",
             isAIWinner 
-                ? `The Computer achieved the victory condition (${hasEnoughIncome ? '$50,000 Income' : 'Bought Dream'}) before you!\nGAME OVER!`
-                : `You achieved the victory condition (${hasEnoughIncome ? '$50,000 Income' : 'Bought Dream'})!\nGAME OVER!`,
+                ? `L'ordinateur a remporté la partie avant vous (${reason}) !\nGAME OVER !`
+                : `Félicitations ! Vous avez remporté la partie (${reason}) !\nBRAVO !`,
             isAIWinner ? "🪦" : "💎",
             isAIWinner ? "var(--danger)" : "var(--success)",
             () => startNewGame()
@@ -1919,11 +1920,15 @@ function handleSpaceLanding(space) {
             const hasMyDream = (p.ownedDreams && p.ownedDreams.some(d => d.isMyDream));
             
             if (hasEnoughIncome || hasMyDream) {
+                const isAIWinner = p.isAI;
+                const reason = hasMyDream ? "Achat de son Rêve" : "Revenus de $50 000/mois atteints";
                 showAlertCard(
-                    "🏆 ULTIMATE VICTORY! 🏆",
-                    `${p.isAI ? 'The Computer' : 'You'} achieved the victory condition (${hasEnoughIncome ? '$50,000 Income' : 'Bought Dream'})!\nGAME OVER!`,
-                    "💎",
-                    "var(--success)",
+                    isAIWinner ? "💀 VOUS AVEZ PERDU ! 💀" : "🏆 VICTOIRE SUPRÊME ! 🏆",
+                    isAIWinner 
+                        ? `L'ordinateur a remporté la partie avant vous (${reason}) !\nGAME OVER !`
+                        : `Félicitations ! Vous avez remporté la partie (${reason}) !\nBRAVO !`,
+                    isAIWinner ? "🪦" : "💎",
+                    isAIWinner ? "var(--danger)" : "var(--success)",
                     () => startNewGame()
                 );
                 return;
@@ -2081,11 +2086,14 @@ function showFastTrackModal(space) {
             
             // Immediate Win Check after purchase
             if (p.fastTrackAssetIncome >= 50000) {
+                const isAIWinner = p.isAI;
                 showAlertCard(
-                    "🏆 ULTIMATE VICTORY! 🏆",
-                    `${p.isAI ? 'The Computer' : 'You'} reached $50,000 in monthly cashflow!\nGAME OVER!`,
-                    "💎",
-                    "var(--success)",
+                    isAIWinner ? "💀 VOUS AVEZ PERDU ! 💀" : "🏆 VICTOIRE SUPRÊME ! 🏆",
+                    isAIWinner 
+                        ? "L'ordinateur a atteint $50 000/mois de cashflow passif et remporte la victoire !\nGAME OVER !"
+                        : "Vous avez atteint $50 000/mois de cashflow passif et remportez la victoire !\nBRAVO !",
+                    isAIWinner ? "🪦" : "💎",
+                    isAIWinner ? "var(--danger)" : "var(--success)",
                     () => startNewGame()
                 );
                 return;
@@ -2129,11 +2137,14 @@ function showFastTrackModal(space) {
                 p.ownedDreams.push({ ...space, isMyDream: true });
                 updateUI();
                 
+                const isAIWinner = p.isAI;
                 showAlertCard(
-                    "🏆 ULTIMATE VICTORY! 🏆",
-                    `${p.isAI ? 'The Computer' : 'You'} bought their dream and WON THE GAME!`,
-                    "💎",
-                    "var(--success)",
+                    isAIWinner ? "💀 VOUS AVEZ PERDU ! 💀" : "🏆 VICTOIRE SUPRÊME ! 🏆",
+                    isAIWinner 
+                        ? `L'ordinateur a acheté son Rêve (${space.title}) et remporte la partie !\nGAME OVER !`
+                        : `Félicitations ! Vous avez acheté votre Rêve (${space.title}) et remportez la victoire !\nBRAVO !`,
+                    isAIWinner ? "🪦" : "💎",
+                    isAIWinner ? "var(--danger)" : "var(--success)",
                     () => startNewGame()
                 );
             };
