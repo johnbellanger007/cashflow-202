@@ -2460,6 +2460,9 @@ function renderMarketCardInternal(card, pIndex, finishMarketAction) {
         chartDiv.id = 'modal-market-chart';
         chartDiv.className = 'mini-chart-container';
         chartDiv.style.gridColumn = '1 / span 2';
+        chartDiv.style.overflow = 'hidden';
+        chartDiv.style.maxHeight = '220px';
+        chartDiv.style.marginBottom = '10px';
         statsContainer.appendChild(chartDiv);
         renderStockChart(symbol, 'modal-market-chart');
     }
@@ -2616,6 +2619,9 @@ function showCardModal(packetId, spaceInfo) {
         chartDiv.id = 'modal-stock-chart';
         chartDiv.className = 'mini-chart-container';
         chartDiv.style.gridColumn = '1 / span 2';
+        chartDiv.style.overflow = 'hidden';
+        chartDiv.style.maxHeight = '220px';
+        chartDiv.style.marginBottom = '10px';
         statsContainer.appendChild(chartDiv);
         renderStockChart(card.symbol, 'modal-stock-chart');
     }
