@@ -1407,16 +1407,6 @@ function renderRatRace() {
     const container = document.getElementById('rat-race-circle');
     container.innerHTML = ''; // Clear existing
     
-    // Add Player tokens
-    state.players.forEach((p, idx) => {
-        const token = document.createElement('div');
-        token.id = `player-token-rat-${idx}`;
-        token.className = 'player-token';
-        token.innerHTML = p.isAI ? '🐭' : '🦁';
-        token.style.color = p.isAI ? '#94a3b8' : '#fbbf24';
-        container.appendChild(token);
-    });
-    
     // Add central logo/info back
     const centerInfo = document.createElement('div');
     centerInfo.className = 'board-center-info';
@@ -1553,15 +1543,6 @@ function renderFastTrack() {
     const sh = 130;
     const gridW = 13;
     const gridH = 9;
-
-    state.players.forEach((p, idx) => {
-        const ftToken = document.createElement('div');
-        ftToken.id = `player-token-fast-${idx}`;
-        ftToken.className = 'player-token hidden';
-        ftToken.innerHTML = p.isAI ? '🐭' : '🦁';
-        ftToken.style.color = p.isAI ? '#94a3b8' : '#fbbf24';
-        container.appendChild(ftToken);
-    });
 
     FAST_TRACK_TRACK.forEach((space, i) => {
         let x, y;
