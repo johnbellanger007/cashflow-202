@@ -1,0 +1,4 @@
+venv/
+extract_cards.py
+.DS_Store
+.git
