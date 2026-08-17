@@ -2243,6 +2243,14 @@ function showCharityModal(space) {
     
     modal.classList.remove('hidden');
     flipModalToFront();
+
+    const p = state.getCurrentPlayer();
+    if (p.isAI) {
+        setTimeout(() => {
+            if (p.cash >= donateAmount * 3) donateBtn.click();
+            else passBtn.click();
+        }, 1200);
+    }
 }
 
 function showDealChoiceModal(spaceInfo) {
@@ -2300,6 +2308,20 @@ function showDealChoiceModal(spaceInfo) {
 
     modal.classList.remove('hidden');
     document.querySelector('[data-tab="statement"]').click();
+
+    // AI Autonomous Selection
+    const p = state.getCurrentPlayer();
+    if (p.isAI) {
+        setTimeout(() => {
+            if (p.cash >= 6000) {
+                btnBig.click();
+            } else if (p.cash >= 2000) {
+                btnSmall.click();
+            } else {
+                passBtn.click();
+            }
+        }, 1200);
+    }
 }
 
 // --- Card Data and Logic ---
@@ -2884,8 +2906,21 @@ function showCardModal(packetId, spaceInfo) {
                 }
             };
             buttonsRow.appendChild(callBtn);
-
             actionsContainer.appendChild(buttonsRow);
+
+            if (p.isAI) {
+                setTimeout(() => {
+                    const cost = card.cost || 20;
+                    if (cost <= 20 && p.cash >= cost * 100 * 1.5) {
+                        buyBtn.click();
+                    } else if (cost >= 40 && p.cash >= 1000) {
+                        if (Math.random() > 0.5) callBtn.click();
+                        else shortBtn.click();
+                    } else {
+                        passBtn.click();
+                    }
+                }, 1200);
+            }
         } else {
             // Standard Deals (Real Estate, Business, etc.)
             const buyBtn = document.createElement('button');
@@ -2912,13 +2947,13 @@ function showCardModal(packetId, spaceInfo) {
             standardRow.appendChild(passBtn);
 
             actionsContainer.appendChild(standardRow);
-        }
 
-        if (p.isAI) {
-            setTimeout(() => {
-                if (p.cash >= getTotalCost() * 2) buyBtn.click();
-                else passBtn.click();
-            }, 1200);
+            if (p.isAI) {
+                setTimeout(() => {
+                    if (p.cash >= getTotalCost() * 1.5) buyBtn.click();
+                    else passBtn.click();
+                }, 1200);
+            }
         }
     } else if (packetId === 'doodad') {
         const payBtn = document.createElement('button');
