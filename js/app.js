@@ -346,6 +346,11 @@ class GameState {
         updateUI();
         updateTokenPosition();
 
+        const btn = document.getElementById('btn-roll-dice');
+        if (btn) {
+            btn.disabled = p.isAI || (p.downsizedTurnsLeft > 0);
+        }
+
         if (p.isAI) {
             this.playAITurn();
         }
@@ -392,53 +397,82 @@ class GameState {
     set charityTurnsLeft(val) { this.getCurrentPlayer().charityTurnsLeft = val; }
     declareBankruptcy() {
         const p = this.getCurrentPlayer();
+        const hasAssets = (p.assets.stocks.length > 0 || p.assets.realEstate.length > 0 || p.assets.options.length > 0 || p.assets.business.length > 0 || p.fastTrackBusinesses.length > 0);
         
-        // 1. Forced Liquidation at 50% of downPayment / strike
+        // Calculate liquidation value
         let totalLiquidated = 0;
         p.assets.stocks.forEach(s => { totalLiquidated += (s.cost * s.shares * 0.5); });
-        p.assets.stocks = [];
         p.assets.realEstate.forEach(r => { totalLiquidated += (r.downPayment * 0.5); });
-        p.assets.realEstate = [];
         p.assets.options.forEach(o => { totalLiquidated += (o.cost * o.quantity * 0.5); });
-        p.assets.options = [];
-        p.assets.business = [];
-        p.fastTrackBusinesses = [];
-        p.fastTrackAssetIncome = 0;
+        p.assets.business.forEach(b => { totalLiquidated += (b.downPayment * 0.5); });
+        p.fastTrackBusinesses.forEach(b => { totalLiquidated += ((b.cost || 100000) * 0.5); });
 
-        p.cash += totalLiquidated;
-
-        showAlertCard(
-            "BANKRUPTCY!",
-            `You liquidated your assets for ${formatMoney(totalLiquidated)}, but your expenses still exceed your income.`,
-            "💸",
-            "var(--danger)"
-        );
-
-        // 2. Repayment of bank loan first if possible
-        const bankLoan = p.liabilities.bankLoan || 0;
-        if (p.cash >= bankLoan && this.getMonthlyCashflow() < 0) {
-            p.cash -= bankLoan;
-            p.liabilities.bankLoan = 0;
-            p.job.expenses.bankLoanPayment = 0;
-        }
-
-        // 3. Last Chance Relief (Halve minor debts)
-        if (this.getMonthlyCashflow() < 0) {
-            this.lastChanceDebtRelief(p);
-        }
-
-        // 4. Final Elimination check
-        if (this.getMonthlyCashflow() < 0) {
-            showAlertCard("GAME OVER", `${p.isAI ? 'The Computer' : 'You'} have been eliminated!`, "💀", "var(--danger)");
-            p.isEliminated = true;
+        if (hasAssets) {
+            if (p.isAI) {
+                this.liquidatePlayerAssets(p);
+                p.cash += totalLiquidated;
+                showAlertCard(
+                    "LIQUIDATION ORDINATEUR",
+                    `L'ordinateur a liquidé ses actifs pour ${formatMoney(totalLiquidated)} afin de payer ses dettes.`,
+                    "💸",
+                    "var(--warning)"
+                );
+                updateUI();
+                setTimeout(() => this.nextTurn(), 2000);
+            } else {
+                showAlertCard(
+                    "RISQUE DE FAILLITE !",
+                    `Vos liquidités sont insuffisantes pour régler vos dettes. Vous pouvez liquider vos actifs à 50% de leur valeur d'achat (+${formatMoney(totalLiquidated)}) pour éviter l'élimination !`,
+                    "⚠️",
+                    "var(--warning)",
+                    () => {
+                        this.liquidatePlayerAssets(p);
+                        p.cash += totalLiquidated;
+                        
+                        // Check if player survives
+                        if (this.getMonthlyCashflow() < 0 && p.cash < 0) {
+                            showAlertCard(
+                                "FAILLITE TOTALE / GAME OVER",
+                                "Malgré la liquidation de tous vos actifs, vos dépenses dépassent vos revenus. Vous avez fait faillite !",
+                                "💀",
+                                "var(--danger)",
+                                () => startNewGame()
+                            );
+                            p.isEliminated = true;
+                        } else {
+                            p.downsizedTurnsLeft = 2;
+                            p.isBankrupt = false;
+                            showAlertCard(
+                                "FAILLITE ÉVITÉE !",
+                                `Vos actifs ont été liquidés (+${formatMoney(totalLiquidated)}). Vos dettes sont couvertes. Vous passez 2 tours pour vous rétablir.`,
+                                "✅",
+                                "var(--success)"
+                            );
+                        }
+                        updateUI();
+                        setTimeout(() => this.nextTurn(), 2000);
+                    }
+                );
+            }
         } else {
-            p.downsizedTurnsLeft = 3; 
-            p.isBankrupt = true; 
-            showAlertCard("RECOVERED", "You avoided elimination, but you lose 3 turns to recover.", "⏳", "var(--success)");
+            // No assets to liquidate -> direct elimination
+            p.isEliminated = true;
+            showAlertCard(
+                "FAILLITE / GAME OVER",
+                p.isAI 
+                    ? "L'ordinateur a fait faillite et est éliminé du jeu !" 
+                    : "Vous avez fait faillite ! Vos dépenses dépassent vos liquidités et vous n'avez aucun actif à liquider pour payer vos dettes.",
+                "💀",
+                "var(--danger)",
+                () => {
+                    if (!p.isAI) startNewGame();
+                }
+            );
+            updateUI();
+            if (p.isAI) {
+                setTimeout(() => this.nextTurn(), 2000);
+            }
         }
-        
-        updateUI();
-        setTimeout(() => this.nextTurn(), 2000);
     }
 
     liquidatePlayerAssets(p) {
@@ -825,6 +859,12 @@ function updateUI() {
     if (state.isFastTrack) {
         updateFastTrackUI();
     }
+
+    // 10. Sync Roll Dice button state
+    const diceBtn = document.getElementById('btn-roll-dice');
+    if (diceBtn) {
+        diceBtn.disabled = p.isAI || p.isEliminated || (p.downsizedTurnsLeft > 0);
+    }
 }
 
 function updateFastTrackUI() {
@@ -1118,46 +1158,53 @@ const FAST_TRACK_TEMPLATE = [
 ];
 
 const FAST_TRACK_TRACK = [
-    { type: 'ft_event', name: 'Cash Day', color: '#facc15', icon: '💰' }, // 0: Corner
-    { type: 'ft_deal', name: 'DEAL', title: 'Movie Theater', cf: 10000, cost: 150000, color: '#22c55e', icon: '🤝' }, // 1
-    { type: 'ft_deal', name: 'DEAL', title: 'Research Center for Diseases', cf: 12000, cost: 200000, color: '#22c55e', icon: '🤝' }, // 2
-    { type: 'ft_bad_partner', name: 'Bad Partner', color: '#ef4444', icon: '😡' }, // 3
-    { type: 'ft_dream', name: 'DREAM', title: 'STOCK MARKET FOR KIDS', cost: 50000, color: '#a855f7', icon: '🌟' }, // 4
-    { type: 'ft_deal', name: 'DEAL', title: 'Software Co. IPO', cf: 20000, cost: 50000, color: '#22c55e', icon: '🤝' }, // 5
-    { type: 'ft_deal', name: 'DEAL', title: 'Coffee Shop', cf: 5000, cost: 120000, color: '#22c55e', icon: '🤝' }, // 6
-    { type: 'ft_deal', name: 'DEAL', title: '400-Unit Apartment Building', cf: 20000, cost: 300000, color: '#22c55e', icon: '🤝' }, // 7
-    { type: 'ft_dream', name: 'DREAM', title: 'CANNES FILM FESTIVAL', cost: 100000, color: '#a855f7', icon: '🌟' }, // 8
-    { type: 'ft_divorce', name: 'Divorce!', color: '#ef4444', icon: '💔' }, // 9
-    { type: 'ft_deal', name: 'DEAL', title: 'Build Pro Golf Course', cf: 30000, cost: 250000, color: '#22c55e', icon: '🤝' }, // 10
-    { type: 'ft_deal', name: 'DEAL', title: 'Pizza Shop', cf: 8000, cost: 150000, color: '#22c55e', icon: '🤝' }, // 11
-    { type: 'ft_event', name: 'Cash Day', color: '#facc15', icon: '💰' }, // 12: Corner
-    { type: 'ft_deal', name: 'DEAL', title: 'Collectibles Store', cf: 10000, cost: 150000, color: '#22c55e', icon: '🤝' }, // 13
-    { type: 'ft_dream', name: 'DREAM', title: 'DINNER WITH THE PRESIDENT', cost: 50000, color: '#a855f7', icon: '🌟' }, // 14
-    { type: 'ft_deal', name: 'DEAL', title: 'Bio-Tech Co. IPO', cf: 25000, cost: 100000, color: '#22c55e', icon: '🤝' }, // 15
-    { type: 'ft_repairs', name: 'Unforeseen Repairs', color: '#ef4444', icon: '🛠️' }, // 16
-    { type: 'ft_deal', name: 'DEAL', title: '200-Unit Mini Storage', cf: 15000, cost: 200000, color: '#22c55e', icon: '🤝' }, // 17
-    { type: 'ft_deal', name: 'DEAL', title: 'Dry Cleaning Business', cf: 8000, cost: 100000, color: '#22c55e', icon: '🤝' }, // 18
-    { type: 'ft_deal', name: 'DEAL', title: 'Mobile Home Park', cf: 11000, cost: 400000, color: '#22c55e', icon: '🤝' }, // 19
-    { type: 'ft_event', name: 'Cash Day', color: '#facc15', icon: '💰' }, // 20: Corner
-    { type: 'ft_deal', name: 'DEAL', title: 'Family Restaurant', cf: 12000, cost: 300000, color: '#22c55e', icon: '🤝' }, // 21
-    { type: 'ft_dream', name: 'DREAM', title: 'ANCIENT ASIAN CITIES', cost: 200000, color: '#a855f7', icon: '🌟' }, // 22
-    { type: 'ft_healthcare', name: 'Healthcare!', color: '#ef4444', icon: '🩺' }, // 23
-    { type: 'ft_charity', name: 'Charity', color: '#a855f7', icon: '🎗️' }, // 24
-    { type: 'ft_deal', name: 'DEAL', title: 'Burger Shop', cf: 11000, cost: 300000, color: '#22c55e', icon: '🤝' }, // 25
-    { type: 'ft_deal', name: 'DEAL', title: 'Heat and A/C Service', cf: 5000, cost: 200000, color: '#22c55e', icon: '🤝' }, // 26
-    { type: 'ft_deal', name: 'DEAL', title: 'Quick Food Market', cf: 5000, cost: 120000, color: '#22c55e', icon: '🤝' }, // 27
-    { type: 'ft_deal', name: 'DEAL', title: 'Assisted Living Center', cf: 8000, cost: 400000, color: '#22c55e', icon: '🤝' }, // 28
-    { type: 'ft_lawsuit', name: 'Lawsuit!', color: '#ef4444', icon: '⚖️' }, // 29
-    { type: 'ft_deal', name: 'DEAL', title: 'Ticket Sales Company', cf: 5000, cost: 150000, color: '#22c55e', icon: '🤝' }, // 30
-    { type: 'ft_dream', name: 'DREAM', title: 'RESEARCH CENTER FOR CANCER AND AIDS', cost: 250000, color: '#a855f7', icon: '🌟' }, // 31
-    { type: 'ft_event', name: 'Cash Day', color: '#facc15', icon: '💰' }, // 32: Corner
-    { type: 'ft_deal', name: 'DEAL', title: 'Fried Chicken Restaurant', cf: 10000, cost: 300000, color: '#22c55e', icon: '🤝' }, // 33
-    { type: 'ft_deal', name: 'DEAL', title: 'Dry Dock Storage', cf: 8000, cost: 100000, color: '#22c55e', icon: '🤝' }, // 34
-    { type: 'ft_deal', name: 'DEAL', title: 'Beauty Salon', cf: 5000, cost: 150000, color: '#22c55e', icon: '🤝' }, // 35
-    { type: 'ft_tax_audit', name: 'Tax Audit!', color: '#ef4444', icon: '🧐' }, // 36
-    { type: 'ft_deal', name: 'DEAL', title: 'Auto Repair Shop', cf: 10000, cost: 150000, color: '#22c55e', icon: '🤝' }, // 37
-    { type: 'ft_dream', name: 'DREAM', title: 'RUN FOR MAYOR', cost: 50000, color: '#a855f7', icon: '🌟' }, // 38
-    { type: 'ft_deal', name: 'DEAL', title: 'Foreign Oil Deal', cf: 15000, cost: 150000, color: '#22c55e', icon: '🤝' }  // 39
+    // Top Row (0 to 12) - Moving Left to Right
+    { type: 'ft_event', name: 'CASHFLOW DAY', title: 'CASHFLOW DAY', color: '#eab308', icon: '💰', subtext: 'Cashflow Day' }, // 0 (Corner)
+    { type: 'ft_deal', name: 'Movie Theater', title: 'Movie Theater', cf: 10000, cost: 150000, color: '#16a34a', icon: '🎬', subtext: '+$10,000/mo CF' }, // 1
+    { type: 'ft_deal', name: 'Research Center for Diseases', title: 'Research Center for Diseases', cf: 12000, cost: 200000, color: '#16a34a', icon: '🔬', subtext: '+$12,000/mo CF' }, // 2
+    { type: 'ft_bad_partner', name: 'Bad Partner', title: 'Bad Partner', desc: 'Lose 1 Cash Flowing Asset', color: '#dc2626', icon: '😡', subtext: 'Lose 1 Asset' }, // 3
+    { type: 'ft_deal', name: 'App Development Company', title: 'App Development Company', cf: 15000, cost: 150000, color: '#16a34a', icon: '📱', subtext: '+$15,000/mo CF' }, // 4
+    { type: 'ft_deal', name: 'Software Co. IPO', title: 'Software Co. IPO', cf: 20000, cost: 25000, isIPO: true, color: '#16a34a', icon: '💻', subtext: 'Roll a die / $25k' }, // 5
+    { type: 'ft_deal', name: 'Coffee Shop', title: 'Coffee Shop', cf: 5000, cost: 120000, color: '#16a34a', icon: '☕', subtext: '+$5,000/mo CF' }, // 6
+    { type: 'ft_deal', name: '400-Unit Apartment Building', title: '400-Unit Apartment Building', cf: 20000, cost: 300000, color: '#16a34a', icon: '🏢', subtext: '+$20,000/mo CF' }, // 7
+    { type: 'ft_deal', name: 'Island Vacation Rentals', title: 'Island Vacation Rentals', cf: 12000, cost: 100000, color: '#16a34a', icon: '🏝️', subtext: '+$12,000/mo CF' }, // 8
+    { type: 'ft_divorce', name: 'Divorce!', title: 'Divorce!', desc: 'Lose 1/2 of your cash', color: '#dc2626', icon: '💔', subtext: 'Lose 1/2 Cash' }, // 9
+    { type: 'ft_deal', name: 'Build Pro Golf Course', title: 'Build Pro Golf Course', cf: 30000, cost: 250000, color: '#16a34a', icon: '⛳', subtext: '+$30,000/mo CF' }, // 10
+    { type: 'ft_deal', name: 'Pizza Shop', title: 'Pizza Shop', cf: 8000, cost: 150000, color: '#16a34a', icon: '🍕', subtext: '+$8,000/mo CF' }, // 11
+    { type: 'ft_event', name: 'CASHFLOW DAY', title: 'CASHFLOW DAY', color: '#eab308', icon: '💰', subtext: 'Cashflow Day' }, // 12 (Corner)
+
+    // Right Column (13 to 19) - Moving Top to Bottom
+    { type: 'ft_deal', name: 'Collectibles Store', title: 'Collectibles Store', cf: 10000, cost: 150000, color: '#16a34a', icon: '🏺', subtext: '+$10,000/mo CF' }, // 13
+    { type: 'ft_deal', name: 'Frozen Yogurt Shop', title: 'Frozen Yogurt Shop', cf: 8000, cost: 120000, color: '#16a34a', icon: '🍦', subtext: '+$8,000/mo CF' }, // 14
+    { type: 'ft_deal', name: 'Bio-Tech Co. IPO', title: 'Bio-Tech Co. IPO', cf: 25000, cost: 25000, isIPO: true, color: '#16a34a', icon: '🧬', subtext: 'Roll a die / $25k' }, // 15
+    { type: 'ft_repairs', name: 'Unforeseen Repairs', title: 'Unforeseen Repairs', desc: 'Pay 1/2 cash or lose 1 property', color: '#dc2626', icon: '🛠️', subtext: 'Pay 1/2 or lose 1' }, // 16
+    { type: 'ft_deal', name: '200-Unit Mini Storage', title: '200-Unit Mini Storage', cf: 15000, cost: 200000, color: '#16a34a', icon: '📦', subtext: '+$15,000/mo CF' }, // 17
+    { type: 'ft_deal', name: 'Dry Cleaning Business', title: 'Dry Cleaning Business', cf: 8000, cost: 100000, color: '#16a34a', icon: '👔', subtext: '+$8,000/mo CF' }, // 18
+    { type: 'ft_deal', name: 'Mobile Home Park', title: 'Mobile Home Park', cf: 11000, cost: 400000, color: '#16a34a', icon: '🚐', subtext: '+$11,000/mo CF' }, // 19
+    { type: 'ft_event', name: 'CASHFLOW DAY', title: 'CASHFLOW DAY', color: '#eab308', icon: '💰', subtext: 'Cashflow Day' }, // 20 (Corner)
+
+    // Bottom Row (21 to 31) - Moving Right to Left
+    { type: 'ft_deal', name: 'Family Restaurant', title: 'Family Restaurant', cf: 12000, cost: 300000, color: '#16a34a', icon: '🍽️', subtext: '+$12,000/mo CF' }, // 21
+    { type: 'ft_deal', name: 'Private Wildlife Preserve', title: 'Private Wildlife Preserve', cf: 10000, cost: 125000, color: '#16a34a', icon: '🦁', subtext: '+$10,000/mo CF' }, // 22
+    { type: 'ft_healthcare', name: 'Healthcare!', title: 'Healthcare!', desc: "Roll 1-3 covered, 4-6 pay all cash", color: '#dc2626', icon: '🩺', subtext: 'Roll 1-3 covered' }, // 23
+    { type: 'ft_charity', name: 'CHARITY', title: 'CHARITY', desc: 'Donate 10% Cash Day, roll 1-2 dice', color: '#7e22ce', icon: '🎗️', subtext: 'Roll 1 or 2 dice' }, // 24
+    { type: 'ft_deal', name: 'Burger Shop', title: 'Burger Shop', cf: 11000, cost: 300000, color: '#16a34a', icon: '🍔', subtext: '+$11,000/mo CF' }, // 25
+    { type: 'ft_deal', name: 'Heat and A/C Service', title: 'Heat and A/C Service', cf: 5000, cost: 200000, color: '#16a34a', icon: '❄️', subtext: '+$5,000/mo CF' }, // 26
+    { type: 'ft_deal', name: 'Quick Food Market', title: 'Quick Food Market', cf: 5000, cost: 120000, color: '#16a34a', icon: '🛒', subtext: '+$5,000/mo CF' }, // 27
+    { type: 'ft_deal', name: 'Assisted Living Center', title: 'Assisted Living Center', cf: 8000, cost: 400000, color: '#16a34a', icon: '🏥', subtext: '+$8,000/mo CF' }, // 28
+    { type: 'ft_lawsuit', name: 'Lawsuit!', title: 'Lawsuit!', desc: 'Pay 1/2 of your cash to defend', color: '#dc2626', icon: '⚖️', subtext: 'Pay 1/2 Cash' }, // 29
+    { type: 'ft_deal', name: 'Ticket Sales Company', title: 'Ticket Sales Company', cf: 5000, cost: 150000, color: '#16a34a', icon: '🎟️', subtext: '+$5,000/mo CF' }, // 30
+    { type: 'ft_deal', name: 'Hobby Supply Store', title: 'Hobby Supply Store', cf: 5000, cost: 100000, color: '#16a34a', icon: '🎨', subtext: '+$5,000/mo CF' }, // 31
+    { type: 'ft_event', name: 'CASHFLOW DAY', title: 'CASHFLOW DAY', color: '#eab308', icon: '💰', subtext: 'Cashflow Day' }, // 32 (Corner)
+
+    // Left Column (33 to 39) - Moving Bottom to Top
+    { type: 'ft_deal', name: 'Fried Chicken Restaurant', title: 'Fried Chicken Restaurant', cf: 10000, cost: 300000, color: '#16a34a', icon: '🍗', subtext: '+$10,000/mo CF' }, // 33
+    { type: 'ft_deal', name: 'Dry Dock Storage', title: 'Dry Dock Storage', cf: 8000, cost: 100000, color: '#16a34a', icon: '⚓', subtext: '+$8,000/mo CF' }, // 34
+    { type: 'ft_deal', name: 'Beauty Salon', title: 'Beauty Salon', cf: 5000, cost: 150000, color: '#16a34a', icon: '💇', subtext: '+$5,000/mo CF' }, // 35
+    { type: 'ft_tax_audit', name: 'Tax Audit!', title: 'Tax Audit!', desc: 'Pay 1/2 of your cash to accountants', color: '#dc2626', icon: '🧐', subtext: 'Pay 1/2 Cash' }, // 36
+    { type: 'ft_deal', name: 'Auto Repair Shop', title: 'Auto Repair Shop', cf: 10000, cost: 150000, color: '#16a34a', icon: '🔧', subtext: '+$10,000/mo CF' }, // 37
+    { type: 'ft_deal', name: 'Extreme Sports Equipment Rental', title: 'Extreme Sports Equipment Rental', cf: 10000, cost: 150000, color: '#16a34a', icon: '🏄', subtext: '+$10,000/mo CF' }, // 38
+    { type: 'ft_deal', name: 'Foreign Oil Deal', title: 'Foreign Oil Deal', cf: 15000, cost: 150000, color: '#16a34a', icon: '🛢️', subtext: '+$15,000/mo CF' }  // 39
 ];
 
 currentBoardTrack = RAT_RACE_TRACK;
@@ -1565,36 +1612,52 @@ function renderFastTrack() {
         el.style.height = sh + 'px';
         el.style.position = 'absolute';
         el.style.boxSizing = 'border-box';
-        el.style.borderRadius = '4px';
+        el.style.borderRadius = '6px';
         el.style.border = '1px solid rgba(255,255,255,0.3)';
         el.style.display = 'flex';
         el.style.flexDirection = 'column';
-        el.style.justifyContent = 'center';
+        el.style.justifyContent = 'space-between';
         el.style.alignItems = 'center';
         el.style.textAlign = 'center';
-        el.style.padding = '10px';
+        el.style.padding = '8px 5px';
         el.style.transform = 'none'; 
+        el.style.overflow = 'hidden';
         
         // Marker for YOUR DREAM
         if (i === state.dreamSpaceId) {
             el.innerHTML = `
-                <div style="position:absolute; top:-15px; left:50%; transform:translateX(-50%); font-size:24px; filter:drop-shadow(0 0 5px #a855f7);">🎯</div>
-                <div class="ft-icon">🌟</div>
-                <div class="ft-name" style="font-size:10px; font-weight:700; color:#fff;">GOAL</div>
-                <div style="font-size:8px; line-height:1; margin-top:4px; color:#fff; text-transform:uppercase;">${state.selectedDream.title}</div>
+                <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); font-size:22px; filter:drop-shadow(0 0 5px #a855f7);">🎯</div>
+                <div class="ft-icon" style="font-size:24px; margin:0;">🌟</div>
+                <div style="font-size:11px; font-weight:800; color:#fff; text-transform:uppercase;">DREAM GOAL</div>
+                <div style="font-size:9px; line-height:1.1; font-weight:700; color:#fef08a; text-transform:uppercase;">${state.selectedDream?.title || 'DREAM'}</div>
+                <div style="font-size:9px; color:rgba(255,255,255,0.9);">${formatMoney(state.selectedDream?.cost || 100000)}</div>
             `;
             el.style.border = '3px solid #a855f7';
-            el.style.boxShadow = '0 0 20px rgba(168, 85, 247, 0.5)';
+            el.style.boxShadow = '0 0 20px rgba(168, 85, 247, 0.6)';
+        } else if (space.type === 'ft_event') {
+            el.innerHTML = `
+                <div class="ft-icon" style="font-size:28px; margin-top:2px;">${space.icon}</div>
+                <div style="font-size:12px; line-height:1.1; font-weight:900; color:#78350f; text-transform:uppercase;">${space.title}</div>
+                <div style="font-size:9px; font-weight:800; color:#854d0e;">COLLECT INCOME</div>
+            `;
+        } else if (space.type === 'ft_deal') {
+            el.innerHTML = `
+                <div style="font-size:10.5px; line-height:1.15; font-weight:800; color:#ffffff; text-shadow:0 1px 2px rgba(0,0,0,0.5);">${space.title}</div>
+                <div class="ft-icon" style="font-size:22px; margin:2px 0;">${space.icon}</div>
+                <div style="font-size:10px; font-weight:800; color:#fef08a; text-shadow:0 1px 2px rgba(0,0,0,0.5);">${space.isIPO ? 'IPO DEAL' : `+${formatMoney(space.cf)}/mo CF`}</div>
+                <div style="font-size:8.5px; font-weight:600; color:rgba(255,255,255,0.9);">${formatMoney(space.cost)} down</div>
+            `;
         } else {
             el.innerHTML = `
-                <div class="ft-icon" style="font-size: 40px; margin-bottom: 5px;">${space.icon}</div>
-                <div style="font-size: 14px; line-height: 1.1; font-weight: 800; text-transform: uppercase; color: white; word-break: break-word; overflow-wrap: break-word;">${space.name || ''}</div>
+                <div style="font-size:11px; line-height:1.15; font-weight:800; color:#ffffff;">${space.title}</div>
+                <div class="ft-icon" style="font-size:24px; margin:2px 0;">${space.icon}</div>
+                <div style="font-size:9px; line-height:1.1; font-weight:600; color:rgba(255,255,255,0.95);">${space.subtext || space.desc || ''}</div>
             `;
         }
         
         // Add ownership marker if business
         if (space.type === 'ft_deal') {
-            const ownerIdx = state.players.findIndex(p => p.fastTrackBusinesses.some(b => b.title === space.title));
+            const ownerIdx = state.players.findIndex(p => p.fastTrackBusinesses && p.fastTrackBusinesses.some(b => b.title === space.title));
             if (ownerIdx !== -1) {
                 const marker = document.createElement('div');
                 marker.className = `owner-dot ${ownerIdx === 0 ? 'human' : 'ai'}`;
@@ -2048,23 +2111,87 @@ function showFastTrackModal(space) {
             }, 1500);
         }
 
-    } else if (['ft_tax_audit', 'ft_divorce', 'ft_lawsuit'].includes(space.type)) {
-        cardTitle.textContent = space.name;
+    } else if (space.type === 'ft_bad_partner') {
+        cardTitle.textContent = "Bad Partner!";
+        cardIcon.textContent = "😡";
+        
+        const hasBiz = p.fastTrackBusinesses && p.fastTrackBusinesses.length > 0;
+        if (hasBiz) {
+            const lostBiz = p.fastTrackBusinesses.pop();
+            p.fastTrackAssetIncome = Math.max(0, p.fastTrackAssetIncome - lostBiz.cf);
+            cardDesc.textContent = `Votre associé vous a trahi ! Vous perdez votre entreprise : ${lostBiz.title} (-${formatMoney(lostBiz.cf)}/mois de cashflow).`;
+            addStat(statsContainer, 'Perte Actif', lostBiz.title, 'danger');
+        } else {
+            const cashLoss = Math.min(p.cash, 10000);
+            p.cash -= cashLoss;
+            cardDesc.textContent = `Mauvais partenaire ! Vous n'avez pas d'entreprise à perdre, mais vous payez ${formatMoney(cashLoss)} en frais d'avocat.`;
+            addStat(statsContainer, 'Pénalité', `-${formatMoney(cashLoss)}`, 'danger');
+        }
+        updateUI();
+        
+        const okBtn = document.createElement('button');
+        okBtn.className = 'action-btn danger';
+        okBtn.textContent = 'CONTINUER';
+        okBtn.onclick = finishTurn;
+        modalActions.appendChild(okBtn);
+        if (p.isAI) setTimeout(() => okBtn.click(), 1500);
+
+    } else if (space.type === 'ft_repairs') {
+        cardTitle.textContent = "Unforeseen Repairs!";
+        cardIcon.textContent = "🛠️";
         const loss = Math.floor(p.cash / 2);
-        cardDesc.textContent = `Disaster! You must pay one half of your total cash. (-${formatMoney(loss)})`;
-        addStat(statsContainer, 'Penalty', `-${formatMoney(loss)}`, 'danger');
+        cardDesc.textContent = `Réparations imprévues ! Vous devez payer la moitié de vos liquidités (-${formatMoney(loss)}) pour réparer vos infrastructures.`;
+        addStat(statsContainer, 'Coût Réparations', `-${formatMoney(loss)}`, 'danger');
+        
         const payBtn = document.createElement('button');
         payBtn.className = 'action-btn danger';
-        payBtn.textContent = `PAY ${formatMoney(loss)}`;
+        payBtn.textContent = `PAYER ${formatMoney(loss)}`;
+        payBtn.onclick = () => { p.cash -= loss; updateUI(); finishTurn(); };
+        modalActions.appendChild(payBtn);
+        if (p.isAI) setTimeout(() => payBtn.click(), 1500);
+
+    } else if (space.type === 'ft_healthcare') {
+        cardTitle.textContent = "Healthcare Alert!";
+        cardIcon.textContent = "🩺";
+        
+        const roll = Math.floor(Math.random() * 6) + 1;
+        const isCovered = roll <= 3;
+        
+        if (isCovered) {
+            cardDesc.textContent = `Urgence médicale (Dé: ${roll}) ! Votre assurance santé vous couvre intégralement. Aucun frais à payer !`;
+            addStat(statsContainer, 'Statut', 'Couvert (100%)', 'success');
+        } else {
+            const loss = p.cash;
+            p.cash = 0;
+            cardDesc.textContent = `Urgence médicale (Dé: ${roll}) ! Vous n'étiez pas couvert pour cette intervention. Vous devez verser la totalité de vos liquidités (-${formatMoney(loss)}).`;
+            addStat(statsContainer, 'Pénalité', `-${formatMoney(loss)}`, 'danger');
+            updateUI();
+        }
+        
+        const okBtn = document.createElement('button');
+        okBtn.className = isCovered ? 'action-btn success' : 'action-btn danger';
+        okBtn.textContent = isCovered ? 'SOULAGÉ ! (CONTINUER)' : 'AÏE ! (CONTINUER)';
+        okBtn.onclick = finishTurn;
+        modalActions.appendChild(okBtn);
+        if (p.isAI) setTimeout(() => okBtn.click(), 1500);
+
+    } else if (['ft_tax_audit', 'ft_divorce', 'ft_lawsuit'].includes(space.type)) {
+        cardTitle.textContent = space.title || space.name;
+        const loss = Math.floor(p.cash / 2);
+        cardDesc.textContent = `Coup dur ! Vous devez régler immédiatement la moitié de votre trésorerie (-${formatMoney(loss)}).`;
+        addStat(statsContainer, 'Pénalité', `-${formatMoney(loss)}`, 'danger');
+        const payBtn = document.createElement('button');
+        payBtn.className = 'action-btn danger';
+        payBtn.textContent = `PAYER ${formatMoney(loss)}`;
         payBtn.onclick = () => { p.cash -= loss; updateUI(); finishTurn(); };
         modalActions.appendChild(payBtn);
         if (p.isAI) setTimeout(() => payBtn.click(), 1500);
     } else {
-        cardTitle.textContent = space.name || "Event";
-        cardDesc.textContent = "Nothing happens this time.";
+        cardTitle.textContent = space.title || space.name || "Event";
+        cardDesc.textContent = space.desc || "Vous passez cette case sans événement particulier.";
         const okBtn = document.createElement('button');
         okBtn.className = 'action-btn';
-        okBtn.textContent = 'CONTINUE';
+        okBtn.textContent = 'CONTINUER';
         okBtn.onclick = finishTurn;
         modalActions.appendChild(okBtn);
         if (p.isAI) setTimeout(() => okBtn.click(), 1000);
@@ -3116,9 +3243,9 @@ function rollDice() {
     const btn = document.getElementById('btn-roll-dice');
     if (btn.disabled) return;
     
-    // Safety: don't let human roll on AI turn
-    if (!p.isAI && p.isBankrupt) { 
-        showAlertCard("BANKRUPT", "You are bankrupt and cannot roll until you settle your debts.", "🚫", "var(--danger)"); 
+    if (p.isAI) return;
+    if (p.isEliminated) { 
+        showAlertCard("ÉLIMINÉ", "Vous avez fait faillite et ne pouvez plus lancer les dés.", "💀", "var(--danger)", () => startNewGame()); 
         return; 
     }
 
