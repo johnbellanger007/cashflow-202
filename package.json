@@ -1,0 +1,8 @@
+{
+  "name": "cashflow-202",
+  "version": "1.0.0",
+  "description": "Cashflow 202 Web Game",
+  "scripts": {
+    "build": "echo 'Static build complete'"
+  }
+}
