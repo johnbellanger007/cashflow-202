@@ -1726,11 +1726,12 @@ function renderStockChart(symbol, containerId) {
     if (!container) return;
     
     const history = state.priceHistory[symbol] || [0];
-    const width = 800;
-    const height = 300;
-    const paddingX = 70;
-    const paddingY = 40;
-    const fontSize = 13;
+    const isTab = (containerId === 'tab-stock-chart');
+    const width = isTab ? 1000 : 800;
+    const height = isTab ? 420 : 250;
+    const paddingX = isTab ? 80 : 70;
+    const paddingY = isTab ? 40 : 30;
+    const fontSize = isTab ? 14 : 12;
     
     const maxP = Math.max(...history, 60);
     const minP = Math.min(...history, 10);
@@ -1782,7 +1783,7 @@ function renderStockChart(symbol, containerId) {
     // Generate Grid Lines and Labels
     let gridLines = '';
     let priceLabels = '';
-    const steps = 5;
+    const steps = isTab ? 6 : 4;
     for (let i = 0; i <= steps; i++) {
         const y = paddingY + (i * (height - paddingY * 2) / steps);
         const price = maxPrice - (i * range / steps);
@@ -1790,7 +1791,8 @@ function renderStockChart(symbol, containerId) {
         priceLabels += `<text x="${paddingX - 12}" y="${y + 4}" text-anchor="end" font-size="${fontSize}" font-weight="600" fill="var(--text-secondary)">$${Math.round(price)}</text>`;
     }
 
-    let svg = `<svg viewBox="0 0 ${width} ${height}" class="stock-chart-svg" style="width: 100%; height: 260px; display: block; background: rgba(0,0,0,0.25); border-radius: 8px; margin-top: 10px;">
+    const svgHeightStyle = isTab ? 'height: 380px; max-height: 420px;' : 'height: 200px; max-height: 220px;';
+    let svg = `<svg viewBox="0 0 ${width} ${height}" class="stock-chart-svg" style="width: 100%; ${svgHeightStyle} display: block; background: rgba(0,0,0,0.25); border-radius: 8px; margin-top: 10px;">
         ${gridLines}
         ${priceLabels}
         ${positionVisuals}
@@ -1808,7 +1810,7 @@ function renderStockChart(symbol, containerId) {
     
     container.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-family: var(--font-heading);">
-            <div style="font-size: 14px; color: var(--text-primary); font-weight: 600;">${symbol} PERFORMANCE</div>
+            <div style="font-size: ${isTab ? '16px' : '14px'}; color: var(--text-primary); font-weight: 700;">${symbol} PERFORMANCE</div>
             <div style="font-size: 12px; color: var(--text-secondary);">Last 50 Turns</div>
         </div>
         ${svg}
@@ -1818,7 +1820,7 @@ function renderStockChart(symbol, containerId) {
 function handleSpaceLanding(space) {
     const p = state.getCurrentPlayer();
     const prompt = document.getElementById('action-prompt');
-    const nameToUse = (p.isFastTrack && space.type === 'ft_deal') ? space.title : space.name;
+    const nameToUse = (p.isFastTrack ? (space.title || space.name) : space.name) || 'Space';
     prompt.textContent = `${p.isAI ? 'Computer' : 'You'} landed on: ${nameToUse}`;
 
     // Systematically switch to the Financial Statement context

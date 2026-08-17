@@ -498,7 +498,7 @@ td {
 
 /* Cashflow 202 Worksheet & Chart Styles */
 #tab-stocks .panel {
-    min-height: calc(100vh - 150px);
+    min-height: calc(100vh - 120px);
     display: flex;
     flex-direction: column;
 }
@@ -507,7 +507,35 @@ td {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
+    gap: 20px;
+    height: 100%;
 }
+
+#tab-stock-chart {
+    flex-grow: 1;
+    min-height: 460px;
+    display: flex;
+    flex-direction: column;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    overflow: hidden;
+}
+
+#tab-stock-chart .stock-chart-svg {
+    width: 100%;
+    height: 380px;
+    max-height: 420px;
+    flex-grow: 1;
+}
+
+#tab-stocks .table-container {
+    margin-top: auto;
+    width: 100%;
+}
+
 .worksheet-table {
     border-collapse: separate;
     border-spacing: 0;
