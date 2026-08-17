@@ -362,6 +362,9 @@ class GameState {
 
         console.log("AI starting autonomous turn...");
         
+        // Smart AI: check if it has surplus cash to pay down debts and reduce expenses
+        this.aiManageDebts(p);
+        
         setTimeout(() => {
             let numDice = p.isFastTrack ? 2 : 1;
             if (p.charityTurnsLeft > 0) {
@@ -369,6 +372,67 @@ class GameState {
             }
             executeRoll(numDice);
         }, 1200);
+    }
+
+    aiManageDebts(p) {
+        if (!p || !p.isAI || p.isFastTrack) return;
+        
+        const safetyReserve = 1000;
+        let availableCash = p.cash - safetyReserve;
+        if (availableCash <= 0) return;
+
+        // 1. Bank Loan (Highest interest: 10%/month = 120%/yr)
+        if (p.liabilities.bankLoan > 0 && availableCash >= 1000) {
+            const repayAmount = Math.min(p.liabilities.bankLoan, Math.floor(availableCash / 1000) * 1000);
+            if (repayAmount > 0) {
+                p.cash -= repayAmount;
+                p.liabilities.bankLoan -= repayAmount;
+                p.job.expenses.bankLoanPayment -= (repayAmount * 0.1);
+                availableCash -= repayAmount;
+                showAlertCard("STRATÉGIE IA 🤖", `L'ordinateur a remboursé ${formatMoney(repayAmount)} de son Emprunt Bancaire pour réduire ses mensualités de ${formatMoney(repayAmount * 0.1)}/mois !`, "💳", "var(--success)");
+                updateUI();
+                return;
+            }
+        }
+
+        // 2. Retail Debt (Saves 60%/yr)
+        if (p.liabilities.retail > 0 && availableCash >= p.liabilities.retail) {
+            const amt = p.liabilities.retail;
+            const saved = p.job.expenses.retail;
+            p.cash -= amt;
+            p.liabilities.retail = 0;
+            p.job.expenses.retail = 0;
+            availableCash -= amt;
+            showAlertCard("STRATÉGIE IA 🤖", `L'ordinateur a remboursé sa dette de Magasin (${formatMoney(amt)}) pour économiser ${formatMoney(saved)}/mois !`, "🛍️", "var(--success)");
+            updateUI();
+            return;
+        }
+
+        // 3. Credit Card (Saves 36%/yr)
+        if (p.liabilities.creditCard > 0 && availableCash >= p.liabilities.creditCard) {
+            const amt = p.liabilities.creditCard;
+            const saved = p.job.expenses.creditCard;
+            p.cash -= amt;
+            p.liabilities.creditCard = 0;
+            p.job.expenses.creditCard = 0;
+            availableCash -= amt;
+            showAlertCard("STRATÉGIE IA 🤖", `L'ordinateur a soldé sa Carte de Crédit (${formatMoney(amt)}) pour économiser ${formatMoney(saved)}/mois !`, "💳", "var(--success)");
+            updateUI();
+            return;
+        }
+
+        // 4. Car Loan (Saves ~20%/yr)
+        if (p.liabilities.carLoan > 0 && availableCash >= p.liabilities.carLoan) {
+            const amt = p.liabilities.carLoan;
+            const saved = p.job.expenses.carLoan;
+            p.cash -= amt;
+            p.liabilities.carLoan = 0;
+            p.job.expenses.carLoan = 0;
+            availableCash -= amt;
+            showAlertCard("STRATÉGIE IA 🤖", `L'ordinateur a soldé son Prêt Voiture (${formatMoney(amt)}) pour économiser ${formatMoney(saved)}/mois !`, "🚗", "var(--success)");
+            updateUI();
+            return;
+        }
     }
 
     // Temporary getters for compatibility during refactoring
