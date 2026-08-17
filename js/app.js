@@ -1267,6 +1267,52 @@ currentBoardTrack = RAT_RACE_TRACK;
 
 // --- Dream Selection UI ---
 let currentDreamIndex = 0;
+const FALLBACK_DREAMS = [
+    {
+        id: "ft_dream_stock_market_kids",
+        title: "STOCK MARKET FOR KIDS",
+        description: "Fund a business and investment school for young capitalists, teaching them the basics of business. School includes a mini stock exchange run by the students.",
+        cost: 50000
+    },
+    {
+        id: "ft_dream_cannes_festival",
+        title: "CANNES FILM FESTIVAL",
+        description: "Party with the stars! Tour France, plus one week in Cannes rubbing elbows with celebrities. You even land a starring role!",
+        cost: 100000
+    },
+    {
+        id: "ft_dream_dinner_president",
+        title: "DINNER WITH THE PRESIDENT",
+        description: "Buy a table for 10 friends to dine with the President at a gala ball for visiting dignitaries from around the world.",
+        cost: 50000
+    },
+    {
+        id: "ft_dream_ancient_asian_cities",
+        title: "ANCIENT ASIAN CITIES",
+        description: "A private plane and guide take you and 5 friends to the most remote spots of Asia... where no tourists have gone before.",
+        cost: 200000
+    },
+    {
+        id: "ft_dream_cancer_aids_center",
+        title: "RESEARCH CENTER FOR CANCER AND AIDS",
+        description: "Your money brings together top researchers & doctors in one place, dedicated to eliminating these two diseases.",
+        cost: 250000
+    },
+    {
+        id: "ft_dream_run_for_mayor",
+        title: "RUN FOR MAYOR",
+        description: "Your financial expertise spurs masses of people to beg you to lead the city. You run and, of course, win. This is the start of your Presidential race.",
+        cost: 50000
+    }
+];
+
+function getDreams() {
+    return (typeof DREAMS_DATA !== 'undefined' && Array.isArray(DREAMS_DATA) && DREAMS_DATA.length > 0) 
+        ? DREAMS_DATA 
+        : FALLBACK_DREAMS;
+}
+
+let currentDreamIndex = 0;
 let isSelectingDream = false;
 
 function showDreamSelector() {
@@ -1285,34 +1331,40 @@ function showDreamSelector() {
     modal.style.right = '';
     modal.style.bottom = '';
     modal.style.transform = 'translate(-50%, -50%)'; // Force reset position to center
-    modal.style.zIndex = '10000'; // Force to top
+    modal.style.zIndex = '20000'; // Force to top
     modal.style.display = 'block'; // Ensure it's not display:none
-
     modal.style.opacity = '1';
     modal.style.pointerEvents = 'auto';
     
     modal.classList.remove('sidebar-docked', 'hidden');
     modal.classList.add('modal-prominence');
-
     
     flipModalToFront();
     SoundManager.playFlip();
     
     // Hide standard close button during selection
-    document.querySelector('.close-btn').style.display = 'none';
+    document.querySelectorAll('.close-btn').forEach(b => b.style.display = 'none');
     
     // Show navigation arrows
     const prevBtn = document.getElementById('card-prev-btn');
     const nextBtn = document.getElementById('card-next-btn');
-    if (prevBtn) prevBtn.classList.remove('hidden');
-    if (nextBtn) nextBtn.classList.remove('hidden');
+    if (prevBtn) {
+        prevBtn.classList.remove('hidden');
+        prevBtn.style.display = 'flex';
+        prevBtn.onclick = () => nextDream(-1);
+    }
+    if (nextBtn) {
+        nextBtn.classList.remove('hidden');
+        nextBtn.style.display = 'flex';
+        nextBtn.onclick = () => nextDream(1);
+    }
     
     updateDreamSelectionCard();
 }
 
 function updateDreamSelectionCard() {
-    const dream = DREAMS_DATA[currentDreamIndex];
-    const modal = document.getElementById('card-modal');
+    const dreams = getDreams();
+    const dream = dreams[currentDreamIndex] || dreams[0];
     
     document.getElementById('card-icon').textContent = '🌟';
     document.getElementById('card-type').textContent = 'CHOOSE YOUR DREAM';
@@ -1341,45 +1393,48 @@ function updateDreamSelectionCard() {
 }
 
 function nextDream(dir) {
+    const dreams = getDreams();
     currentDreamIndex += dir;
-    if (currentDreamIndex < 0) currentDreamIndex = DREAMS_DATA.length - 1;
-    if (currentDreamIndex >= DREAMS_DATA.length) currentDreamIndex = 0;
+    if (currentDreamIndex < 0) currentDreamIndex = dreams.length - 1;
+    if (currentDreamIndex >= dreams.length) currentDreamIndex = 0;
     updateDreamSelectionCard();
     SoundManager.playFlip();
 }
 
 function confirmDream() {
-    // Assign the specific board index based on the chosen dream for Human
+    const dreams = getDreams();
     const dreamIndices = [4, 8, 14, 22, 31, 38];
     const human = state.players[0];
-    human.selectedDream = DREAMS_DATA[currentDreamIndex];
-    human.dreamSpaceId = dreamIndices[currentDreamIndex];
+    human.selectedDream = dreams[currentDreamIndex] || dreams[0];
+    human.dreamSpaceId = dreamIndices[currentDreamIndex] || dreamIndices[0];
     
     // Assign a random dream for AI (different from human)
     const ai = state.players[1];
     let aiDreamIdx;
-    do { aiDreamIdx = Math.floor(Math.random() * DREAMS_DATA.length); } while (aiDreamIdx === currentDreamIndex);
-    ai.selectedDream = DREAMS_DATA[aiDreamIdx];
+    do { aiDreamIdx = Math.floor(Math.random() * dreams.length); } while (aiDreamIdx === currentDreamIndex && dreams.length > 1);
+    ai.selectedDream = dreams[aiDreamIdx];
     ai.dreamSpaceId = dreamIndices[aiDreamIdx];
 
     const modal = document.getElementById('card-modal');
     modal.classList.add('hidden');
     
     // Restore standard UI for next cards
-    document.querySelector('.close-btn').style.display = 'block';
-    document.getElementById('card-prev-btn').classList.add('hidden');
-    document.getElementById('card-next-btn').classList.add('hidden');
+    document.querySelectorAll('.close-btn').forEach(b => b.style.display = 'block');
+    const prevBtn = document.getElementById('card-prev-btn');
+    const nextBtn = document.getElementById('card-next-btn');
+    if (prevBtn) { prevBtn.classList.add('hidden'); prevBtn.style.display = 'none'; }
+    if (nextBtn) { nextBtn.classList.add('hidden'); nextBtn.style.display = 'none'; }
     modal.classList.add('sidebar-docked'); 
     
     const sidebarDreamEl = document.getElementById('player-dream');
     if (sidebarDreamEl) {
-        sidebarDreamEl.innerHTML = `${state.selectedDream.title}`;
+        sidebarDreamEl.innerHTML = `${human.selectedDream.title}`;
         sidebarDreamEl.style.display = 'flex';
     }
     
     const ftDreamObj = document.getElementById('ft-dream-objective');
     if (ftDreamObj && state.isFastTrack) {
-        ftDreamObj.innerHTML = `<span style="color:#eabb00">Objective:</span> ${state.selectedDream.title}`;
+        ftDreamObj.innerHTML = `<span style="color:#eabb00">Objective:</span> ${human.selectedDream.title}`;
     }
     
     // Final UI refresh to show the marker
@@ -1395,7 +1450,7 @@ function confirmDream() {
     setTimeout(() => {
         showAlertCard(
             "Game Start!",
-            `Excellent choice! Your dream is to fund "${state.selectedDream.title}".\n\nYour new profession is: ${state.job.title}.\nStarting Cash: ${formatMoney(state.cash)}.\nReach the Fast Track to make it happen!`,
+            `Excellent choice! Your dream is to fund "${human.selectedDream.title}".\n\nYour new profession is: ${state.job.title}.\nStarting Cash: ${formatMoney(state.cash)}.\nReach the Fast Track to make it happen!`,
             "🌟",
             "var(--accent-primary)"
         );
