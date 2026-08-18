@@ -478,12 +478,7 @@ class GameState {
             if (p.isAI) {
                 this.liquidatePlayerAssets(p);
                 p.cash += totalLiquidated;
-                showAlertCard(
-                    "LIQUIDATION ORDINATEUR",
-                    `L'ordinateur a liquidé ses actifs pour ${formatMoney(totalLiquidated)} afin de payer ses dettes.`,
-                    "💸",
-                    "var(--warning)"
-                );
+                showAIToast(`🤖 IA liquide ses actifs pour ${formatMoney(totalLiquidated)} pour couvrir ses dettes.`);
                 updateUI();
                 setTimeout(() => this.nextTurn(), 2000);
             } else {
@@ -2128,7 +2123,7 @@ function handleSpaceLanding(space) {
             const card = drawCard('doodad');
             p.cash -= (card.cost || 0);
             updateUI();
-            showAlertCard("AI DOODAD", `The computer spent ${formatMoney(card.cost)} on ${card.title}.`, "💸", "var(--danger)");
+            showAIToast(`🤖 IA paie ${formatMoney(card.cost)} (Doodad : ${card.title})`);
             setTimeout(() => state.nextTurn(), 1500);
         } else {
             setTimeout(() => showCardModal(space.id, space), 800);
@@ -2137,12 +2132,16 @@ function handleSpaceLanding(space) {
         p.cash -= state.getTotalExpenses();
         p.downsizedTurnsLeft = 2; 
         updateUI();
-        showAlertCard(
-            "Downsized!",
-            `${p.isAI ? 'Computer' : 'You'} lost ${formatMoney(state.getTotalExpenses())} and lose 2 turns!`,
-            "📉",
-            "var(--danger)"
-        );
+        if (p.isAI) {
+            showAIToast(`🤖 IA est Downsized ! Perd ${formatMoney(state.getTotalExpenses())} et passe 2 tours.`);
+        } else {
+            showAlertCard(
+                "Downsized!",
+                `Vous perdez ${formatMoney(state.getTotalExpenses())} et perdez 2 tours !`,
+                "📉",
+                "var(--danger)"
+            );
+        }
         setTimeout(() => state.nextTurn(), 1500);
     } else if (space.type === 'ft_charity' || space.id === 'charity' || (space.id && space.id.startsWith('ft_charity'))) {
         if (p.isAI) {
@@ -2151,7 +2150,7 @@ function handleSpaceLanding(space) {
                 p.cash -= cost;
                 p.charityTurnsLeft = 3;
                 updateUI();
-                showAlertCard("AI CHARITY", "The computer donated $10,000 to charity! It will roll extra dice for 3 turns.", "❤️", "var(--success)");
+                showAIToast(`🤖 IA donne ${formatMoney(cost)} à la charité — jets supplémentaires pendant 3 tours.`);
             }
             setTimeout(() => state.nextTurn(), 1500);
         } else {
@@ -2160,12 +2159,16 @@ function handleSpaceLanding(space) {
     } else if (space.id === 'baby') {
         p.childrenCount++;
         updateUI();
-        showAlertCard(
-            "New Baby!",
-            `${p.isAI ? 'The computer' : 'You'} had a baby! Expenses increased.`,
-            "👶",
-            "var(--accent-primary)"
-        );
+        if (p.isAI) {
+            showAIToast('🤖 IA a un bébé ! Ses dépenses augmentent.');
+        } else {
+            showAlertCard(
+                "New Baby!",
+                "Vous avez un enfant ! Vos dépenses augmentent.",
+                "👶",
+                "var(--accent-primary)"
+            );
+        }
         setTimeout(() => state.nextTurn(), 1500);
     } else if (p.isFastTrack) {
         setTimeout(() => showFastTrackModal(space), 800);
@@ -3674,10 +3677,18 @@ function executeRoll(numDiceOverride = null) {
                 if (state.isFastTrack) {
                     SoundManager.playCash();
                     state.cash += state.getTotalIncome();
-                    showAlertCard("CASHFLOW DAY!", `Vous avez passé un Cashflow Day ! +${formatMoney(state.getTotalIncome())}`, "💰", "var(--success)");
+                    if (state.getCurrentPlayer().isAI) {
+                        showAIToast(`🤖 IA passe un Cashflow Day ! +${formatMoney(state.getTotalIncome())}`);
+                    } else {
+                        showAlertCard("CASHFLOW DAY!", `Vous avez passé un Cashflow Day ! +${formatMoney(state.getTotalIncome())}`, "💰", "var(--success)");
+                    }
                 } else {
                     state.cash += state.getMonthlyCashflow();
-                    showAlertCard("PAYDAY!", `C'est le jour de paye ! +${formatMoney(state.getMonthlyCashflow())}`, "💸", "var(--success)");
+                    if (state.getCurrentPlayer().isAI) {
+                        showAIToast(`🤖 IA passe la Paye ! +${formatMoney(state.getMonthlyCashflow())}`);
+                    } else {
+                        showAlertCard("PAYDAY!", `C'est le jour de paye ! +${formatMoney(state.getMonthlyCashflow())}`, "💸", "var(--success)");
+                    }
                 }
             }
         }
