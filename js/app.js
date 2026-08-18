@@ -2170,6 +2170,7 @@ function processNextCard() {
 }
 
 function showFastTrackModal(space) {
+    flipModalToFront();
     const p = state.getCurrentPlayer();
     const opp = state.getOpponent();
     const modal = document.getElementById('card-modal');
@@ -2434,6 +2435,7 @@ function showFastTrackModal(space) {
 }
 
 function showCharityModal(space) {
+    flipModalToFront();
     const modal = document.getElementById('card-modal');
     document.getElementById('card-icon').textContent = space.icon || '❤️';
     document.getElementById('card-type').textContent = space.name.toUpperCase();
@@ -2487,6 +2489,7 @@ function showCharityModal(space) {
 }
 
 function showDealChoiceModal(spaceInfo) {
+    flipModalToFront();
     const modal = document.getElementById('card-modal');
     document.getElementById('card-icon').textContent = spaceInfo.icon;
     document.getElementById('card-type').textContent = "DISCOVERY PHASE (Step 1)";
@@ -2963,6 +2966,7 @@ function renderMarketCardInternal(card, pIndex, finishMarketAction) {
 }
 
 function showCardModal(packetId, spaceInfo) {
+    flipModalToFront();
     SoundManager.playFlip();
     const p = state.getCurrentPlayer();
     const modal = document.getElementById('card-modal');
