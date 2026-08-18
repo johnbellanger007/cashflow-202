@@ -1408,7 +1408,16 @@ function showDreamSelector() {
     modal.classList.remove('sidebar-docked', 'hidden');
     modal.classList.add('modal-prominence');
     
-    flipModalToFront();
+    const flipper = document.getElementById('modal-flipper');
+    if (flipper) flipper.classList.remove('flipped');
+    
+    const frontBox = document.getElementById('modal-content-box');
+    if (frontBox) {
+        frontBox.style.display = 'flex';
+        frontBox.style.visibility = 'visible';
+        frontBox.style.opacity = '1';
+    }
+    
     SoundManager.playFlip();
     
     // Hide standard close button during selection
