@@ -1417,6 +1417,12 @@ function showDreamSelector() {
         frontBox.style.opacity = '1';
     }
     
+    // Explicitly hide the bank/back panel
+    const backBox = document.getElementById('modal-back-box');
+    if (backBox) {
+        backBox.style.display = 'none';
+    }
+    
     SoundManager.playFlip();
     
     // Hide standard close button during selection
@@ -3304,6 +3310,10 @@ function showCardModal(packetId, spaceInfo) {
 function flipModalToFront() {
     const flipper = document.getElementById('modal-flipper');
     if (flipper) flipper.classList.remove('flipped');
+    const frontBox = document.getElementById('modal-content-box');
+    if (frontBox) frontBox.style.display = 'flex';
+    const backBox = document.getElementById('modal-back-box');
+    if (backBox) backBox.style.display = 'none';
 }
 
 function flipModalToBack(title, statsRenderer, actionsRenderer) {
@@ -3319,6 +3329,11 @@ function flipModalToBack(title, statsRenderer, actionsRenderer) {
     const actions = document.getElementById('back-actions');
     actions.innerHTML = '';
     if (typeof actionsRenderer === 'function') actionsRenderer(actions);
+    
+    const frontBox = document.getElementById('modal-content-box');
+    if (frontBox) frontBox.style.display = 'none';
+    const backBox = document.getElementById('modal-back-box');
+    if (backBox) backBox.style.display = 'flex';
     
     flipper.classList.add('flipped');
 }

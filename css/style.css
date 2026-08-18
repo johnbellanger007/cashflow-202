@@ -783,7 +783,7 @@ td {
 }
 
 .modal-back {
-    display: none;
+    display: none !important;
     flex-direction: column;
     width: 100%;
 }
