@@ -3249,6 +3249,7 @@ function showCardModal(packetId, spaceInfo) {
                     else passBtn.click();
                 }, 1200);
             }
+        } else {
             // Standard Deals (Real Estate, Business, etc.)
             const totalCost = getTotalCost();
             const canAfford = p.cash >= totalCost;
@@ -3264,10 +3265,10 @@ function showCardModal(packetId, spaceInfo) {
                 }
             };
 
-            const passBtn = document.createElement('button');
-            passBtn.className = 'btn-secondary';
-            passBtn.textContent = 'PASS DEAL';
-            passBtn.onclick = () => { closeModal(modal); setTimeout(() => initiateMarketPhase(), 500); };
+            const standardPassBtn = document.createElement('button');
+            standardPassBtn.className = 'btn-secondary';
+            standardPassBtn.textContent = 'PASS DEAL';
+            standardPassBtn.onclick = () => { closeModal(modal); setTimeout(() => initiateMarketPhase(), 500); };
 
             const standardRow = document.createElement('div');
             standardRow.style.display = 'flex';
@@ -3275,14 +3276,14 @@ function showCardModal(packetId, spaceInfo) {
             standardRow.style.justifyContent = 'flex-end';
             standardRow.style.width = '100%';
             standardRow.appendChild(buyBtn);
-            standardRow.appendChild(passBtn);
+            standardRow.appendChild(standardPassBtn);
 
             actionsContainer.appendChild(standardRow);
 
             if (p.isAI) {
                 setTimeout(() => {
                     if (p.cash >= getTotalCost() * 1.5) buyBtn.click();
-                    else passBtn.click();
+                    else standardPassBtn.click();
                 }, 1200);
             }
         }
