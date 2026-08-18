@@ -3730,10 +3730,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("Critical error during DOMContentLoaded:", e);
     }
 });
-    
-    // --- 202: Init Draggables ---
-    makeDraggable(document.getElementById('card-modal'), document.getElementById('card-header'));
-});
 
 function exerciseOption(idx) {
     state.exerciseOption(idx);
