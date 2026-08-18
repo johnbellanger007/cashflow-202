@@ -12,9 +12,12 @@ const SoundManager = {
     },
     playTone(freq, type, duration, vol=0.1) {
         if (this.isMuted) return;
-        this.init();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
         try {
+            this.init();
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume().catch(() => {});
+            }
+            if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = type;
@@ -1326,14 +1329,17 @@ function showDreamSelector() {
         return;
     }
     
-    modal.style.top = ''; // Reset drag position
-    modal.style.left = '';
-    modal.style.right = '';
-    modal.style.bottom = '';
-    modal.style.transform = 'translate(-50%, -50%)'; // Force reset position to center
-    modal.style.zIndex = '20000'; // Force to top
-    modal.style.display = 'block'; // Ensure it's not display:none
+    // Explicitly reset all inline positions to center screen
+    modal.style.position = 'fixed';
+    modal.style.top = '50%';
+    modal.style.left = '50%';
+    modal.style.right = 'auto';
+    modal.style.bottom = 'auto';
+    modal.style.transform = 'translate(-50%, -50%)';
+    modal.style.zIndex = '20000';
+    modal.style.display = 'flex';
     modal.style.opacity = '1';
+    modal.style.visibility = 'visible';
     modal.style.pointerEvents = 'auto';
     
     modal.classList.remove('sidebar-docked', 'hidden');
@@ -1366,30 +1372,41 @@ function updateDreamSelectionCard() {
     const dreams = getDreams();
     const dream = dreams[currentDreamIndex] || dreams[0];
     
-    document.getElementById('card-icon').textContent = '🌟';
-    document.getElementById('card-type').textContent = 'CHOOSE YOUR DREAM';
-    document.getElementById('card-header').style.borderBottomColor = '#ec4899';
+    const cardIcon = document.getElementById('card-icon');
+    if (cardIcon) cardIcon.textContent = '🌟';
+    const cardType = document.getElementById('card-type');
+    if (cardType) cardType.textContent = 'CHOOSE YOUR DREAM';
+    const cardHeader = document.getElementById('card-header');
+    if (cardHeader) cardHeader.style.borderBottomColor = '#ec4899';
     
-    document.getElementById('card-title').textContent = dream.title;
-    document.getElementById('card-desc').textContent = dream.description;
+    const cardTitle = document.getElementById('card-title');
+    if (cardTitle) cardTitle.textContent = dream.title;
+    const cardDesc = document.getElementById('card-desc');
+    if (cardDesc) cardDesc.textContent = dream.description;
     
-    // Hide image container as per user request (screenshot removal)
-    document.getElementById('card-img-container').classList.add('hidden');
+    const imgContainer = document.getElementById('card-img-container');
+    if (imgContainer) imgContainer.classList.add('hidden');
     
     const statsContainer = document.getElementById('card-stats');
-    statsContainer.innerHTML = '';
-    addStat(statsContainer, 'Cost', formatMoney(dream.cost), 'success');
+    if (statsContainer) {
+        statsContainer.innerHTML = '';
+        addStat(statsContainer, 'Cost', formatMoney(dream.cost), 'success');
+    }
     
     const actionsContainer = document.getElementById('card-actions');
-    actionsContainer.innerHTML = '';
-    
-    const chooseBtn = document.createElement('button');
-    chooseBtn.className = 'action-btn';
-    chooseBtn.style.background = '#ec4899';
-    chooseBtn.textContent = 'SELECT DREAM';
-    chooseBtn.onclick = confirmDream;
-    
-    actionsContainer.appendChild(chooseBtn);
+    if (actionsContainer) {
+        actionsContainer.innerHTML = '';
+        
+        const chooseBtn = document.createElement('button');
+        chooseBtn.className = 'action-btn';
+        chooseBtn.style.background = '#ec4899';
+        chooseBtn.style.color = '#ffffff';
+        chooseBtn.style.fontWeight = 'bold';
+        chooseBtn.textContent = 'SELECT DREAM';
+        chooseBtn.onclick = confirmDream;
+        
+        actionsContainer.appendChild(chooseBtn);
+    }
 }
 
 function nextDream(dir) {
