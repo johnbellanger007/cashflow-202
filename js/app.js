@@ -1378,7 +1378,6 @@ function getDreams() {
         : FALLBACK_DREAMS;
 }
 
-let currentDreamIndex = 0;
 let isSelectingDream = false;
 
 function showDreamSelector() {
