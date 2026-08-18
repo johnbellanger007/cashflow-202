@@ -755,8 +755,22 @@ function updateUI() {
     
     const sidebarDreamEl = document.getElementById('player-dream');
     if (sidebarDreamEl) {
-        sidebarDreamEl.innerHTML = p.selectedDream ? `${p.selectedDream.title}` : '';
-        sidebarDreamEl.style.display = p.selectedDream ? 'flex' : 'none';
+        if (p.selectedDream) {
+            sidebarDreamEl.innerHTML = `🌟 ${p.selectedDream.title}`;
+            sidebarDreamEl.style.display = 'flex';
+            sidebarDreamEl.style.cursor = 'pointer';
+            sidebarDreamEl.title = "Cliquez pour changer de rêve";
+            sidebarDreamEl.onclick = () => showDreamSelector();
+        } else {
+            sidebarDreamEl.innerHTML = `✨ Choisir votre Rêve`;
+            sidebarDreamEl.style.display = 'flex';
+            sidebarDreamEl.style.cursor = 'pointer';
+            sidebarDreamEl.style.background = 'rgba(236, 72, 153, 0.2)';
+            sidebarDreamEl.style.border = '1px dashed #ec4899';
+            sidebarDreamEl.style.borderRadius = '6px';
+            sidebarDreamEl.style.padding = '6px 10px';
+            sidebarDreamEl.onclick = () => showDreamSelector();
+        }
     }
 
     // 0.1 Turn Indicator
