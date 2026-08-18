@@ -767,8 +767,6 @@ td {
 }
 
 .modal-flip-container {
-    -webkit-perspective: 1000px;
-    perspective: 1000px;
     width: 100%;
     pointer-events: auto;
 }
@@ -776,41 +774,22 @@ td {
 .modal-flipper {
     width: 100%;
     position: relative;
-    -webkit-transform-style: preserve-3d;
-    transform-style: preserve-3d;
-    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: translateY(0) scale(1) rotateY(0deg);
 }
 
-.modal-overlay.hidden .modal-flipper {
-    transform: translateY(30px) scale(0.95) rotateY(0deg);
-}
-
-.modal-flipper.flipped {
-    transform: translateY(0) scale(1) rotateY(180deg);
-}
-
-.modal-overlay.hidden .modal-flipper.flipped {
-    transform: translateY(30px) scale(0.95) rotateY(180deg);
-}
-
-.modal-front, .modal-back {
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    position: relative;
-    top: 0; left: 0;
+.modal-front {
+    display: flex;
+    flex-direction: column;
     width: 100%;
 }
 
-.modal-flipper:not(.flipped) .modal-front {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
+.modal-back {
+    display: none;
+    flex-direction: column;
+    width: 100%;
 }
 
-.modal-back {
-    position: absolute;
-    transform: rotateY(180deg);
+.modal-flipper.flipped .modal-front {
+    display: none !important;
 }
 
 .modal-flipper.flipped .modal-back {
