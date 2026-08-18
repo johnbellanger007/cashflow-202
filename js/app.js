@@ -2934,8 +2934,24 @@ function renderMarketCardInternal(card, pIndex, finishMarketAction) {
                     row.remove(); updateUI();
                 };
             } else if (m.type === 'real_estate' || m.type === 'business') {
-                btn.textContent = `SELL (+${formatMoney(offer)})`;
+                const mortgageBalance = Math.max(0, (m.asset.cost || 0) - (m.asset.downPayment || 0));
+                const netProceeds = offer - mortgageBalance;
+                const netLabel = netProceeds >= 0
+                    ? `SELL (NET +${formatMoney(netProceeds)})`
+                    : `SELL (NET ${formatMoney(netProceeds)})`;
+                btn.textContent = netLabel;
+                if (netProceeds < 0) btn.classList.add('danger');
+                else btn.classList.add('success');
+                btn.title = `Sale price: ${formatMoney(offer)} — Mortgage payoff: ${formatMoney(mortgageBalance)} — Net: ${formatMoney(netProceeds)}`;
                 btn.onclick = () => {
+                    if (netProceeds < 0 && (p.cash + netProceeds) < 0) {
+                        showAlertCard(
+                            "Vente à perte !",
+                            `Cette vente rapporte ${formatMoney(offer)} mais vous devez rembourser l'hypothèque de ${formatMoney(mortgageBalance)}. Résultat net : ${formatMoney(netProceeds)}. Vous n'avez pas assez de liquidités pour couvrir la différence.`,
+                            "⚠️", "var(--danger)"
+                        );
+                        return;
+                    }
                     sellAsset(m.type === 'real_estate' ? 'realEstate' : 'business', m.index, offer, null, m.asset);
                     row.remove(); updateUI();
                 };
