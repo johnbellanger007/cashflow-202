@@ -392,7 +392,7 @@ class GameState {
                 p.liabilities.bankLoan -= repayAmount;
                 p.job.expenses.bankLoanPayment -= (repayAmount * 0.1);
                 availableCash -= repayAmount;
-                showAlertCard("STRATÉGIE IA 🤖", `L'ordinateur a remboursé ${formatMoney(repayAmount)} de son Emprunt Bancaire pour réduire ses mensualités de ${formatMoney(repayAmount * 0.1)}/mois !`, "💳", "var(--success)");
+                showAIToast(`🤖 IA rembourse ${formatMoney(repayAmount)} d'Emprunt Bancaire (-${formatMoney(repayAmount * 0.1)}/mois)`);
                 updateUI();
                 return;
             }
@@ -406,7 +406,7 @@ class GameState {
             p.liabilities.retail = 0;
             p.job.expenses.retail = 0;
             availableCash -= amt;
-            showAlertCard("STRATÉGIE IA 🤖", `L'ordinateur a remboursé sa dette de Magasin (${formatMoney(amt)}) pour économiser ${formatMoney(saved)}/mois !`, "🛍️", "var(--success)");
+            showAIToast(`🤖 IA solde sa dette Magasin (${formatMoney(amt)}) — économise ${formatMoney(saved)}/mois`);
             updateUI();
             return;
         }
@@ -419,7 +419,7 @@ class GameState {
             p.liabilities.creditCard = 0;
             p.job.expenses.creditCard = 0;
             availableCash -= amt;
-            showAlertCard("STRATÉGIE IA 🤖", `L'ordinateur a soldé sa Carte de Crédit (${formatMoney(amt)}) pour économiser ${formatMoney(saved)}/mois !`, "💳", "var(--success)");
+            showAIToast(`🤖 IA solde sa Carte de Crédit (${formatMoney(amt)}) — économise ${formatMoney(saved)}/mois`);
             updateUI();
             return;
         }
@@ -432,7 +432,7 @@ class GameState {
             p.liabilities.carLoan = 0;
             p.job.expenses.carLoan = 0;
             availableCash -= amt;
-            showAlertCard("STRATÉGIE IA 🤖", `L'ordinateur a soldé son Prêt Voiture (${formatMoney(amt)}) pour économiser ${formatMoney(saved)}/mois !`, "🚗", "var(--success)");
+            showAIToast(`🤖 IA solde son Prêt Voiture (${formatMoney(amt)}) — économise ${formatMoney(saved)}/mois`);
             updateUI();
             return;
         }
@@ -740,6 +740,29 @@ let state = new GameState();
 // UI Updater
 function formatMoney(amount) {
     return '$ ' + amount.toLocaleString('en-US');
+}
+
+// Non-blocking AI action toast - appears briefly without touching the modal or game flow
+function showAIToast(message) {
+    let toast = document.getElementById('ai-toast-banner');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'ai-toast-banner';
+        toast.style.cssText = `
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #d1fae5; padding: 10px 20px; border-radius: 10px;
+            font-size: 13px; font-weight: 600; z-index: 99999;
+            backdrop-filter: blur(8px); text-align: center;
+            pointer-events: none; transition: opacity 0.4s ease;
+            max-width: 90vw;
+        `;
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.style.opacity = '1';
+    clearTimeout(toast._hideTimer);
+    toast._hideTimer = setTimeout(() => { toast.style.opacity = '0'; }, 3500);
 }
 
 function updateUI() {
