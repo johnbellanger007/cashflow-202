@@ -743,211 +743,260 @@ function formatMoney(amount) {
 }
 
 function updateUI() {
-    const p = state.getCurrentPlayer();
-    
-    // 0. Update Sidebar
-    document.getElementById('player-job').textContent = p.job.title + (p.isAI ? " (AI)" : "");
-    const avatarEl = document.querySelector('.avatar');
-    if (avatarEl) {
-        avatarEl.textContent = p.job.avatar;
-        avatarEl.style.border = p.isAI ? '2px solid #38bdf8' : '2px solid #eabb00';
-    }
-    
-    const sidebarDreamEl = document.getElementById('player-dream');
-    if (sidebarDreamEl) {
-        if (p.selectedDream) {
-            sidebarDreamEl.innerHTML = `🌟 ${p.selectedDream.title}`;
-            sidebarDreamEl.style.display = 'flex';
-            sidebarDreamEl.style.cursor = 'pointer';
-            sidebarDreamEl.title = "Cliquez pour changer de rêve";
-            sidebarDreamEl.onclick = () => showDreamSelector();
-        } else {
-            sidebarDreamEl.innerHTML = `✨ Choisir votre Rêve`;
-            sidebarDreamEl.style.display = 'flex';
-            sidebarDreamEl.style.cursor = 'pointer';
-            sidebarDreamEl.style.background = 'rgba(236, 72, 153, 0.2)';
-            sidebarDreamEl.style.border = '1px dashed #ec4899';
-            sidebarDreamEl.style.borderRadius = '6px';
-            sidebarDreamEl.style.padding = '6px 10px';
-            sidebarDreamEl.onclick = () => showDreamSelector();
+    try {
+        const p = state.getCurrentPlayer();
+        if (!p) return;
+        
+        // 0. Update Sidebar
+        const jobEl = document.getElementById('player-job');
+        if (jobEl && p.job) jobEl.textContent = p.job.title + (p.isAI ? " (AI)" : "");
+        
+        const avatarEl = document.querySelector('.avatar');
+        if (avatarEl && p.job) {
+            avatarEl.textContent = p.job.avatar;
+            avatarEl.style.border = p.isAI ? '2px solid #38bdf8' : '2px solid #eabb00';
         }
-    }
+        
+        const sidebarDreamEl = document.getElementById('player-dream');
+        if (sidebarDreamEl) {
+            if (p.selectedDream) {
+                sidebarDreamEl.innerHTML = `🌟 ${p.selectedDream.title}`;
+                sidebarDreamEl.style.display = 'flex';
+                sidebarDreamEl.style.cursor = 'pointer';
+                sidebarDreamEl.title = "Cliquez pour changer de rêve";
+                sidebarDreamEl.onclick = () => showDreamSelector();
+            } else {
+                sidebarDreamEl.innerHTML = `✨ Choisir votre Rêve`;
+                sidebarDreamEl.style.display = 'flex';
+                sidebarDreamEl.style.cursor = 'pointer';
+                sidebarDreamEl.style.background = 'rgba(236, 72, 153, 0.2)';
+                sidebarDreamEl.style.border = '1px dashed #ec4899';
+                sidebarDreamEl.style.borderRadius = '6px';
+                sidebarDreamEl.style.padding = '6px 10px';
+                sidebarDreamEl.onclick = () => showDreamSelector();
+            }
+        }
 
-    // 0.1 Turn Indicator
-    const turnStatus = document.getElementById('turn-status-indicator');
-    const turnAvatar = document.getElementById('turn-avatar');
-    const turnText = document.getElementById('turn-text');
-    if (turnStatus && turnAvatar && turnText) {
-        turnStatus.className = `turn-indicator ${p.isAI ? 'ai-turn' : 'human-turn'}`;
-        turnAvatar.textContent = p.isAI ? '🐭' : '🦁';
-        turnText.textContent = p.isAI ? "COMPUTER TURN" : "YOUR TURN";
-    }
+        // 0.1 Turn Indicator
+        const turnStatus = document.getElementById('turn-status-indicator');
+        const turnAvatar = document.getElementById('turn-avatar');
+        const turnText = document.getElementById('turn-text');
+        if (turnStatus && turnAvatar && turnText) {
+            turnStatus.className = `turn-indicator ${p.isAI ? 'ai-turn' : 'human-turn'}`;
+            turnAvatar.textContent = p.isAI ? '🐭' : '🦁';
+            turnText.textContent = p.isAI ? "COMPUTER TURN" : "YOUR TURN";
+        }
 
-    // 1. Top Bar
-    document.getElementById('player-cash').textContent = formatMoney(p.cash);
-    document.getElementById('player-passive-income').textContent = formatMoney(state.getPassiveIncome());
-    document.getElementById('player-total-expenses').textContent = formatMoney(state.getTotalExpenses());
-    
-    // Progress bar for Fast Track
-    // 202 Rule: exit Rat Race requires Passive Income > 2x Total Expenses
-    const target = state.getTotalExpenses() * 2;
-    let progress = Math.min((state.getPassiveIncome() / target) * 100, 100) || 0;
-    document.getElementById('passive-income-progress').style.width = `${progress}%`;
-    document.querySelector('.passive-income-display .label').textContent = p.isFastTrack ? "FAST TRACK" : "Passive Income vs 2x Expenses";
+        // 1. Top Bar
+        const cashEl = document.getElementById('player-cash');
+        if (cashEl) cashEl.textContent = formatMoney(p.cash);
+        const piEl = document.getElementById('player-passive-income');
+        if (piEl) piEl.textContent = formatMoney(state.getPassiveIncome());
+        const expEl = document.getElementById('player-total-expenses');
+        if (expEl) expEl.textContent = formatMoney(state.getTotalExpenses());
+        
+        const target = state.getTotalExpenses() * 2;
+        let progress = Math.min((state.getPassiveIncome() / (target || 1)) * 100, 100) || 0;
+        const progEl = document.getElementById('passive-income-progress');
+        if (progEl) progEl.style.width = `${progress}%`;
+        const piLabel = document.querySelector('.passive-income-display .label');
+        if (piLabel) piLabel.textContent = p.isFastTrack ? "FAST TRACK" : "Passive Income vs 2x Expenses";
 
-    // 2. Income Section
-    document.getElementById('salary-val').textContent = formatMoney(state.job.salary);
-    const passiveIncomeVal = document.getElementById('passive-income-val');
-    if (passiveIncomeVal) passiveIncomeVal.textContent = formatMoney(state.getPassiveIncome());
-    document.getElementById('total-income-val').textContent = formatMoney(state.getTotalIncome());
-    
-    // Lists logic for passive income
-    const dividendsList = document.getElementById('dividends-list');
-    const stocksWithDivs = state.assets.stocks.filter(s => s.dividend > 0);
-    if (stocksWithDivs.length === 0) {
-        dividendsList.innerHTML = '<div class="empty-state">No dividend assets</div>';
-    } else {
-        dividendsList.innerHTML = stocksWithDivs.map(s => `<div class="data-row"><span>${s.symbol} dividends</span><span class="value success">+${formatMoney(s.dividend * s.shares)}</span></div>`).join('');
-    }
+        // 2. Income Section
+        const salaryEl = document.getElementById('salary-val');
+        if (salaryEl && p.job) salaryEl.textContent = formatMoney(p.job.salary);
+        const passiveIncomeVal = document.getElementById('passive-income-val');
+        if (passiveIncomeVal) passiveIncomeVal.textContent = formatMoney(state.getPassiveIncome());
+        const totalIncomeEl = document.getElementById('total-income-val');
+        if (totalIncomeEl) totalIncomeEl.textContent = formatMoney(state.getTotalIncome());
+        
+        // Lists logic for passive income
+        const dividendsList = document.getElementById('dividends-list');
+        if (dividendsList) {
+            const stocksWithDivs = (p.assets.stocks || []).filter(s => s.dividend > 0);
+            if (stocksWithDivs.length === 0) {
+                dividendsList.innerHTML = '<div class="empty-state">No dividend assets</div>';
+            } else {
+                dividendsList.innerHTML = stocksWithDivs.map(s => `<div class="data-row"><span>${s.symbol} dividends</span><span class="value success">+${formatMoney(s.dividend * s.shares)}</span></div>`).join('');
+            }
+        }
 
-    const reList = document.getElementById('real-estate-list');
-    const combinedRealEstateBiz = [...state.assets.realEstate, ...state.assets.business];
-    if (combinedRealEstateBiz.length === 0) {
-        reList.innerHTML = '<div class="empty-state">No real estate assets</div>';
-    } else {
-        reList.innerHTML = combinedRealEstateBiz.map(r => `<div class="data-row"><span>${r.type}</span><span class="value success">+${formatMoney(r.cashflow)}</span></div>`).join('');
-    }
-    
-    // 3. Expenses Section
-    const e = state.job.expenses;
-    document.getElementById('taxes-val').textContent = formatMoney(e.taxes);
-    document.getElementById('home-mortgage-val').textContent = formatMoney(e.homeMortgage);
-    document.getElementById('school-loan-val').textContent = formatMoney(e.schoolLoan);
-    document.getElementById('car-loan-val').textContent = formatMoney(e.carLoan);
-    document.getElementById('credit-card-val').textContent = formatMoney(e.creditCard);
-    document.getElementById('retail-val').textContent = formatMoney(e.retail);
-    document.getElementById('bank-loan-payment-val').textContent = formatMoney(e.bankLoanPayment);
-    document.getElementById('children-count').textContent = state.childrenCount;
-    document.getElementById('child-expense-val').textContent = formatMoney(state.childrenCount * e.childPerUnit);
-    document.getElementById('total-expense-val').textContent = formatMoney(state.getTotalExpenses());
+        const reList = document.getElementById('real-estate-list');
+        if (reList) {
+            const combinedRealEstateBiz = [...(p.assets.realEstate || []), ...(p.assets.business || [])];
+            if (combinedRealEstateBiz.length === 0) {
+                reList.innerHTML = '<div class="empty-state">No real estate assets</div>';
+            } else {
+                reList.innerHTML = combinedRealEstateBiz.map(r => `<div class="data-row"><span>${r.type}</span><span class="value success">+${formatMoney(r.cashflow)}</span></div>`).join('');
+            }
+        }
+        
+        // 3. Expenses Section
+        if (p.job && p.job.expenses) {
+            const e = p.job.expenses;
+            const taxEl = document.getElementById('taxes-val');
+            if (taxEl) taxEl.textContent = formatMoney(e.taxes || 0);
+            const hmEl = document.getElementById('home-mortgage-val');
+            if (hmEl) hmEl.textContent = formatMoney(e.homeMortgage || 0);
+            const slEl = document.getElementById('school-loan-val');
+            if (slEl) slEl.textContent = formatMoney(e.schoolLoan || 0);
+            const clEl = document.getElementById('car-loan-val');
+            if (clEl) clEl.textContent = formatMoney(e.carLoan || 0);
+            const ccEl = document.getElementById('credit-card-val');
+            if (ccEl) ccEl.textContent = formatMoney(e.creditCard || 0);
+            const retEl = document.getElementById('retail-val');
+            if (retEl) retEl.textContent = formatMoney(e.retail || 0);
+            const blEl = document.getElementById('bank-loan-payment-val');
+            if (blEl) blEl.textContent = formatMoney(e.bankLoanPayment || 0);
+            const chCountEl = document.getElementById('children-count');
+            if (chCountEl) chCountEl.textContent = p.childrenCount || 0;
+            const chExpEl = document.getElementById('child-expense-val');
+            if (chExpEl) chExpEl.textContent = formatMoney((p.childrenCount || 0) * (e.childPerUnit || 0));
+            const totExpEl = document.getElementById('total-expense-val');
+            if (totExpEl) totExpEl.textContent = formatMoney(state.getTotalExpenses());
+        }
 
-    // 4. Cashflow (Paycheck) Section 
-    document.getElementById('calc-income').textContent = formatMoney(state.getTotalIncome());
-    document.getElementById('calc-expense').textContent = formatMoney(state.getTotalExpenses());
-    document.getElementById('monthly-cashflow').textContent = formatMoney(state.getMonthlyCashflow());
+        // 4. Cashflow (Paycheck) Section 
+        const cInc = document.getElementById('calc-income');
+        if (cInc) cInc.textContent = formatMoney(state.getTotalIncome());
+        const cExp = document.getElementById('calc-expense');
+        if (cExp) cExp.textContent = formatMoney(state.getTotalExpenses());
+        const cMonth = document.getElementById('monthly-cashflow');
+        if (cMonth) cMonth.textContent = formatMoney(state.getMonthlyCashflow());
 
-    // 5. Liabilities Section
-    const l = state.liabilities;
-    document.getElementById('home-mortgage-liab').textContent = formatMoney(l.homeMortgage);
-    document.getElementById('school-loan-liab').textContent = formatMoney(l.schoolLoan);
-    document.getElementById('car-loan-liab').textContent = formatMoney(l.carLoan);
-    document.getElementById('credit-card-liab').textContent = formatMoney(l.creditCard);
-    document.getElementById('retail-liab').textContent = formatMoney(l.retail);
-    document.getElementById('bank-loan-liab').textContent = formatMoney(l.bankLoan);
-    
-    // 6. Assets Section (Financial Statement)
-    document.getElementById('savings-val').textContent = formatMoney(state.job.savings); // Savings is distinct from cash
+        // 5. Liabilities Section
+        if (p.liabilities) {
+            const l = p.liabilities;
+            const hmLiab = document.getElementById('home-mortgage-liab');
+            if (hmLiab) hmLiab.textContent = formatMoney(l.homeMortgage || 0);
+            const slLiab = document.getElementById('school-loan-liab');
+            if (slLiab) slLiab.textContent = formatMoney(l.schoolLoan || 0);
+            const clLiab = document.getElementById('car-loan-liab');
+            if (clLiab) clLiab.textContent = formatMoney(l.carLoan || 0);
+            const ccLiab = document.getElementById('credit-card-liab');
+            if (ccLiab) ccLiab.textContent = formatMoney(l.creditCard || 0);
+            const retLiab = document.getElementById('retail-liab');
+            if (retLiab) retLiab.textContent = formatMoney(l.retail || 0);
+            const blLiab = document.getElementById('bank-loan-liab');
+            if (blLiab) blLiab.textContent = formatMoney(l.bankLoan || 0);
+        }
+        
+        // 6. Assets Section (Financial Statement)
+        const savEl = document.getElementById('savings-val');
+        if (savEl && p.job) savEl.textContent = formatMoney(p.job.savings || 0);
 
-    const stocksTbody = document.querySelector('#stocks-table tbody');
-    if (state.assets.stocks.length === 0) {
-        stocksTbody.innerHTML = '<tr><td colspan="3" class="text-center empty-state">No stocks owned</td></tr>';
-    } else {
-        stocksTbody.innerHTML = state.assets.stocks.map(s => `<tr><td>${s.symbol}</td><td>${s.shares}</td><td>${formatMoney(s.cost)}</td></tr>`).join('');
-    }
+        const stocksTbody = document.querySelector('#stocks-table tbody');
+        if (stocksTbody) {
+            if (!p.assets.stocks || p.assets.stocks.length === 0) {
+                stocksTbody.innerHTML = '<tr><td colspan="3" class="text-center empty-state">No stocks owned</td></tr>';
+            } else {
+                stocksTbody.innerHTML = p.assets.stocks.map(s => `<tr><td>${s.symbol}</td><td>${s.shares}</td><td>${formatMoney(s.cost)}</td></tr>`).join('');
+            }
+        }
 
-    // New 202: Options Table
-    const optionsTbody = document.querySelector('#options-table tbody');
-    if (state.assets.options.length === 0) {
-        optionsTbody.innerHTML = '<tr><td colspan="5" class="text-center empty-state">No active options</td></tr>';
-    } else {
-        optionsTbody.innerHTML = state.assets.options.map((o, idx) => {
-            const isCall = o.type === 'call';
-            return `
-            <tr>
-                <td style="color:${isCall ? '#10b981' : '#ec4899'}">${o.symbol} (${o.type.toUpperCase()})</td>
-                <td>${o.quantity}</td>
-                <td>${formatMoney(o.cost)}</td>
-                <td>${formatMoney(o.strike)}</td>
-                <td>${o.expiry} turns</td>
-            </tr>`;
-        }).join('');
-    }
+        const optionsTbody = document.querySelector('#options-table tbody');
+        if (optionsTbody) {
+            if (!p.assets.options || p.assets.options.length === 0) {
+                optionsTbody.innerHTML = '<tr><td colspan="5" class="text-center empty-state">No active options</td></tr>';
+            } else {
+                optionsTbody.innerHTML = p.assets.options.map((o, idx) => {
+                    const isCall = o.type === 'call';
+                    return `
+                    <tr>
+                        <td style="color:${isCall ? '#10b981' : '#ec4899'}">${o.symbol} (${o.type.toUpperCase()})</td>
+                        <td>${o.quantity}</td>
+                        <td>${formatMoney(o.cost)}</td>
+                        <td>${formatMoney(o.strike)}</td>
+                        <td>${o.expiry} turns</td>
+                    </tr>`;
+                }).join('');
+            }
+        }
 
-    // New 202: Shorts Table
-    const shortsTbody = document.querySelector('#shorts-table tbody');
-    if (state.assets.shorts.length === 0) {
-        shortsTbody.innerHTML = '<tr><td colspan="5" class="text-center empty-state">No short positions</td></tr>';
-    } else {
-        shortsTbody.innerHTML = state.assets.shorts.map(s => {
-            const currentPrice = state.getCurrentPrice(s.symbol);
-            return `
-            <tr>
-                <td>${s.symbol}</td>
-                <td>${s.quantity}</td>
-                <td>${formatMoney(s.salePrice)}</td>
-                <td class="${currentPrice > s.salePrice ? 'danger-text' : 'success-text'}">${formatMoney(currentPrice)}</td>
-                <td><span style="font-size:10px; color:var(--text-muted);">Blocked</span></td>
-            </tr>`;
-        }).join('');
-    }
+        const shortsTbody = document.querySelector('#shorts-table tbody');
+        if (shortsTbody) {
+            if (!p.assets.shorts || p.assets.shorts.length === 0) {
+                shortsTbody.innerHTML = '<tr><td colspan="5" class="text-center empty-state">No short positions</td></tr>';
+            } else {
+                shortsTbody.innerHTML = p.assets.shorts.map(s => {
+                    const currentPrice = state.getCurrentPrice(s.symbol);
+                    return `
+                    <tr>
+                        <td>${s.symbol}</td>
+                        <td>${s.quantity}</td>
+                        <td>${formatMoney(s.salePrice)}</td>
+                        <td class="${currentPrice > s.salePrice ? 'danger-text' : 'success-text'}">${formatMoney(currentPrice)}</td>
+                        <td><span style="font-size:10px; color:var(--text-muted);">Blocked</span></td>
+                    </tr>`;
+                }).join('');
+            }
+        }
 
-    const reTbody = document.querySelector('#real-estate-assets-table tbody');
-    if (combinedRealEstateBiz.length === 0) {
-        reTbody.innerHTML = '<tr><td colspan="3" class="text-center empty-state">No real estate owned</td></tr>';
-    } else {
-        reTbody.innerHTML = combinedRealEstateBiz.map(r => `<tr><td>${r.type}</td><td>${formatMoney(r.downPayment)}</td><td>${formatMoney(r.cost)}</td></tr>`).join('');
-    }
-    
-    const reLiabList = document.getElementById('real-estate-liab-list');
-    if (combinedRealEstateBiz.length === 0) {
-        reLiabList.innerHTML = '<div class="empty-state">No real estate loans</div>';
-    } else {
-        reLiabList.innerHTML = combinedRealEstateBiz.map(r => `<div class="data-row"><span>${r.type}</span><span class="value">${formatMoney(r.cost - r.downPayment)}</span></div>`).join('');
-    }
-    
-    // 7. Portfolio Tab Sync
-    updatePortfolioUI();
+        const reTbody = document.querySelector('#real-estate-assets-table tbody');
+        const combinedRealEstateBiz = [...(p.assets.realEstate || []), ...(p.assets.business || [])];
+        if (reTbody) {
+            if (combinedRealEstateBiz.length === 0) {
+                reTbody.innerHTML = '<tr><td colspan="3" class="text-center empty-state">No real estate owned</td></tr>';
+            } else {
+                reTbody.innerHTML = combinedRealEstateBiz.map(r => `<tr><td>${r.type}</td><td>${formatMoney(r.downPayment)}</td><td>${formatMoney(r.cost)}</td></tr>`).join('');
+            }
+        }
+        
+        const reLiabList = document.getElementById('real-estate-liab-list');
+        if (reLiabList) {
+            if (combinedRealEstateBiz.length === 0) {
+                reLiabList.innerHTML = '<div class="empty-state">No real estate loans</div>';
+            } else {
+                reLiabList.innerHTML = combinedRealEstateBiz.map(r => `<div class="data-row"><span>${r.type}</span><span class="value">${formatMoney(r.cost - r.downPayment)}</span></div>`).join('');
+            }
+        }
+        
+        // 7. Portfolio Tab Sync
+        updatePortfolioUI();
 
-    // 8. Winning check for Fast Track (202 Rule: Accumulate $50,000 extra passive income)
-    const hasEnoughIncome = p.fastTrackAssetIncome >= 50000;
-    const hasMyDream = (p.ownedDreams && p.ownedDreams.some(d => d.isMyDream));
-    
-    if (p.isFastTrack && (hasEnoughIncome || hasMyDream)) {
-        SoundManager.playTone(800, 'sine', 0.5);
-        const isAIWinner = p.isAI;
-        const reason = hasMyDream ? "Achat de son Rêve" : "Revenus de $50 000/mois atteints";
-        showAlertCard(
-            isAIWinner ? "💀 VOUS AVEZ PERDU ! 💀" : "🏆 VICTOIRE SUPRÊME ! 🏆",
-            isAIWinner 
-                ? `L'ordinateur a remporté la partie avant vous (${reason}) !\nGAME OVER !`
-                : `Félicitations ! Vous avez remporté la partie (${reason}) !\nBRAVO !`,
-            isAIWinner ? "🪦" : "💎",
-            isAIWinner ? "var(--danger)" : "var(--success)",
-            () => startNewGame()
-        );
-        return;
-    }
+        // 8. Winning check for Fast Track
+        const hasEnoughIncome = p.fastTrackAssetIncome >= 50000;
+        const hasMyDream = (p.ownedDreams && p.ownedDreams.some(d => d.isMyDream));
+        
+        if (p.isFastTrack && (hasEnoughIncome || hasMyDream)) {
+            SoundManager.playTone(800, 'sine', 0.5);
+            const isAIWinner = p.isAI;
+            const reason = hasMyDream ? "Achat de son Rêve" : "Revenus de $50 000/mois atteints";
+            showAlertCard(
+                isAIWinner ? "💀 VOUS AVEZ PERDU ! 💀" : "🏆 VICTOIRE SUPRÊME ! 🏆",
+                isAIWinner 
+                    ? `L'ordinateur a remporté la partie avant vous (${reason}) !\nGAME OVER !`
+                    : `Félicitations ! Vous avez remporté la partie (${reason}) !\nBRAVO !`,
+                isAIWinner ? "🪦" : "💎",
+                isAIWinner ? "var(--danger)" : "var(--success)",
+                () => startNewGame()
+            );
+            return;
+        }
 
-    // Checking for Rat Race exit
-    if (!state.isFastTrack && state.getPassiveIncome() >= (state.getTotalExpenses() * 2)) {
-        showAlertCard(
-            "CONGRATULATIONS!",
-            "Your passive income is now double your expenses. Prepare to enter the Fast Track!",
-            "🚀",
-            "var(--success)"
-        );
-        transitionToFastTrack();
-    }
+        // Checking for Rat Race exit
+        if (!p.isFastTrack && state.getPassiveIncome() >= (state.getTotalExpenses() * 2)) {
+            showAlertCard(
+                "CONGRATULATIONS!",
+                "Your passive income is now double your expenses. Prepare to enter the Fast Track!",
+                "🚀",
+                "var(--success)"
+            );
+            transitionToFastTrack();
+        }
 
-    // 9. Fast Track UI Update
-    if (state.isFastTrack) {
-        updateFastTrackUI();
-    }
+        // 9. Fast Track UI Update
+        if (p.isFastTrack) {
+            updateFastTrackUI();
+        }
 
-    // 10. Sync Roll Dice button state
-    const diceBtn = document.getElementById('btn-roll-dice');
-    if (diceBtn) {
-        diceBtn.disabled = p.isAI || p.isEliminated || (p.downsizedTurnsLeft > 0);
+        // 10. Sync Roll Dice button state
+        const diceBtn = document.getElementById('btn-roll-dice');
+        if (diceBtn) {
+            diceBtn.disabled = p.isAI || p.isEliminated || (p.downsizedTurnsLeft > 0);
+        }
+    } catch(err) {
+        console.error("Error in updateUI:", err);
     }
 }
 
