@@ -2378,6 +2378,7 @@ function showFastTrackModal(space) {
         const loss = Math.floor(p.cash / 2);
         cardDesc.textContent = `Réparations imprévues ! Vous devez payer la moitié de vos liquidités (-${formatMoney(loss)}) pour réparer vos infrastructures.`;
         addStat(statsContainer, 'Coût Réparations', `-${formatMoney(loss)}`, 'danger');
+        modalActions.appendChild(cashImpactPreview(p.cash, -loss));
         
         const payBtn = document.createElement('button');
         payBtn.className = 'action-btn danger';
@@ -2416,6 +2417,7 @@ function showFastTrackModal(space) {
         const loss = Math.floor(p.cash / 2);
         cardDesc.textContent = `Coup dur ! Vous devez régler immédiatement la moitié de votre trésorerie (-${formatMoney(loss)}).`;
         addStat(statsContainer, 'Pénalité', `-${formatMoney(loss)}`, 'danger');
+        modalActions.appendChild(cashImpactPreview(p.cash, -loss));
         const payBtn = document.createElement('button');
         payBtn.className = 'action-btn danger';
         payBtn.textContent = `PAYER ${formatMoney(loss)}`;
@@ -2473,6 +2475,7 @@ function showCharityModal(space) {
         }
     };
     
+    actionsContainer.appendChild(cashImpactPreview(state.cash, -donateAmount));
     actionsContainer.appendChild(passBtn);
     actionsContainer.appendChild(donateBtn);
     
@@ -3296,6 +3299,8 @@ function showCardModal(packetId, spaceInfo) {
             standardPassBtn.textContent = 'PASS DEAL';
             standardPassBtn.onclick = () => { closeModal(modal); setTimeout(() => initiateMarketPhase(), 500); };
 
+            actionsContainer.appendChild(cashImpactPreview(p.cash, -totalCost));
+
             const standardRow = document.createElement('div');
             standardRow.style.display = 'flex';
             standardRow.style.gap = '10px';
@@ -3314,10 +3319,12 @@ function showCardModal(packetId, spaceInfo) {
             }
         }
     } else if (packetId === 'doodad') {
+        const doodadCost = card.cost || 0;
         const payBtn = document.createElement('button');
         payBtn.className = 'action-btn danger';
-        payBtn.textContent = `PAY ${formatMoney(card.cost || 0)}`;
-        payBtn.onclick = () => { p.cash -= (card.cost || 0); updateUI(); closeModal(modal); state.nextTurn(); };
+        payBtn.textContent = `PAY ${formatMoney(doodadCost)}`;
+        payBtn.onclick = () => { p.cash -= doodadCost; updateUI(); closeModal(modal); state.nextTurn(); };
+        actionsContainer.appendChild(cashImpactPreview(p.cash, -doodadCost));
         actionsContainer.appendChild(payBtn);
         if (p.isAI) setTimeout(() => payBtn.click(), 1500);
     }
@@ -3488,6 +3495,30 @@ function sellAsset(arrayType, index, salePrice, modal, assetDetails, quantity = 
     if (p.isAI) state.nextTurn();
 }
 
+
+// --- Cash Impact Preview Helper ---
+// Creates a styled preview line: "💰 Cash: $X,XXX → After: $Y,YYY"
+function cashImpactPreview(currentCash, delta) {
+    const after = currentCash + delta;
+    const isNeg = after < 0;
+    const isWarn = after >= 0 && after < 1000;
+    const color = isNeg ? 'var(--danger)' : isWarn ? 'var(--warning)' : 'var(--success)';
+    const icon = isNeg ? '🔴' : isWarn ? '⚠️' : '✅';
+    const div = document.createElement('div');
+    div.style.cssText = `
+        display: flex; align-items: center; justify-content: space-between;
+        background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 8px; padding: 8px 12px; font-size: 12px;
+        margin-top: 8px; gap: 8px;
+    `;
+    div.innerHTML = `
+        <span style="color:var(--text-muted);">💰 Votre cash :</span>
+        <span style="font-weight:700;">${formatMoney(currentCash)}</span>
+        <span style="color:var(--text-muted);">→</span>
+        <span style="font-weight:800; color:${color};">${icon} ${formatMoney(after)}</span>
+    `;
+    return div;
+}
 
 function addStat(container, labelText, valueText, colorClass = '') {
     const item = document.createElement('div');
