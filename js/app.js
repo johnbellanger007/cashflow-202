@@ -3664,60 +3664,72 @@ function loadCardsData() {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    loadCardsData();
-    initTabs();
-    
-    // Assign navigation arrow clicks for dream selector
-    const prevBtn = document.getElementById('card-prev-btn');
-    if (prevBtn) prevBtn.onclick = () => nextDream(-1);
-    const nextBtn = document.getElementById('card-next-btn');
-    if (nextBtn) nextBtn.onclick = () => nextDream(1);
+    try {
+        loadCardsData();
+        initTabs();
+        
+        // Assign navigation arrow clicks for dream selector
+        const prevBtn = document.getElementById('card-prev-btn');
+        if (prevBtn) prevBtn.onclick = () => nextDream(-1);
+        const nextBtn = document.getElementById('card-next-btn');
+        if (nextBtn) nextBtn.onclick = () => nextDream(1);
 
-    forceNewGame();
+        forceNewGame();
 
-    const rollBtn = document.getElementById('btn-roll-dice');
-    if (rollBtn) rollBtn.addEventListener('click', rollDice);
+        const rollBtn = document.getElementById('btn-roll-dice');
+        if (rollBtn) rollBtn.addEventListener('click', rollDice);
 
-    const closeBtn = document.getElementById('btn-close-modal');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            closeModal(document.getElementById('card-modal'));
-        });
+        const closeBtn = document.getElementById('btn-close-modal');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                closeModal(document.getElementById('card-modal'));
+            });
+        }
+        const backCloseBtn = document.getElementById('btn-close-back');
+        if (backCloseBtn) {
+            backCloseBtn.addEventListener('click', () => {
+                closeModal(document.getElementById('card-modal'));
+            });
+        }
+        
+        // Debug button to jump to Phase 5
+        const debugBtn = document.getElementById('debug-win-btn');
+        if (debugBtn) {
+            debugBtn.addEventListener('click', () => {
+                if(!state.isFastTrack) transitionToFastTrack();
+            });
+        }
+
+        // New Game Button
+        const newGameBtn = document.getElementById('new-game-btn');
+        if (newGameBtn) {
+            newGameBtn.onclick = () => {
+                startNewGame();
+            };
+        }
+
+        // Cashflow card interaction
+        const cfCard = document.querySelector('.cashflow-card');
+        if (cfCard) {
+            cfCard.addEventListener('click', () => {
+                state.cash += state.getMonthlyCashflow();
+                updateUI();
+                showAlertCard("FORCED PAYDAY!", `Forced Payday! You earned ${formatMoney(state.getMonthlyCashflow())}`, "💸", "var(--success)");
+            });
+        }
+
+        // Make card draggable
+        const cardModal = document.getElementById('card-modal');
+        const cardHeader = document.getElementById('card-header');
+        if (cardModal && cardHeader) {
+            makeDraggable(cardModal, cardHeader);
+        }
+        
+        console.log("Game fully initialized successfully!");
+    } catch(e) {
+        console.error("Critical error during DOMContentLoaded:", e);
     }
-    const backCloseBtn = document.getElementById('btn-close-back');
-    if (backCloseBtn) {
-        backCloseBtn.addEventListener('click', () => {
-            closeModal(document.getElementById('card-modal'));
-        });
-    }
-    
-    // Debug button to jump to Phase 5
-    document.getElementById('debug-win-btn').addEventListener('click', () => {
-        if(!state.isFastTrack) transitionToFastTrack();
-    });
-
-    // New Game Button
-    const newGameBtn = document.getElementById('new-game-btn');
-    if (newGameBtn) {
-        newGameBtn.onclick = () => {
-            startNewGame();
-        };
-    }
-
-    // Show Dream Selector on load if no dream selected (202 Style)
-    // NOTE: This is now handled by forceNewGame() to avoid double calls
-    console.log("Game initialized. Waiting for dream selector...");
-
-
-    // Example interaction
-    const cfCard = document.querySelector('.cashflow-card');
-    if (cfCard) {
-        cfCard.addEventListener('click', () => {
-            state.cash += state.getMonthlyCashflow();
-            updateUI();
-            showAlertCard("FORCED PAYDAY!", `Forced Payday! You earned ${formatMoney(state.getMonthlyCashflow())}`, "💸", "var(--success)");
-        });
-    }
+});
     
     // --- 202: Init Draggables ---
     makeDraggable(document.getElementById('card-modal'), document.getElementById('card-header'));
