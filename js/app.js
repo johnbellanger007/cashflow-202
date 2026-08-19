@@ -336,12 +336,16 @@ class GameState {
 
         if (p.downsizedTurnsLeft > 0) {
             p.downsizedTurnsLeft--;
-            showAlertCard(
-                "Downsized Wait", 
-                `${p.isAI ? 'The Computer' : 'You'} must wait! ${p.downsizedTurnsLeft + 1} turn(s) remaining.`, 
-                "⏳", 
-                "var(--warning)"
-            );
+            if (p.isAI) {
+                showAIToast(`🤖 IA doit attendre encore ${p.downsizedTurnsLeft + 1} tour(s) (Downsized).`);
+            } else {
+                showAlertCard(
+                    "Downsized Wait",
+                    `Vous devez attendre ! ${p.downsizedTurnsLeft + 1} tour(s) restant(s).`,
+                    "⏳",
+                    "var(--warning)"
+                );
+            }
             setTimeout(() => this.nextTurn(), 2000);
             return;
         }
@@ -994,12 +998,16 @@ function updateUI() {
 
         // Checking for Rat Race exit
         if (!p.isFastTrack && state.getPassiveIncome() >= (state.getTotalExpenses() * 2)) {
-            showAlertCard(
-                "CONGRATULATIONS!",
-                "Your passive income is now double your expenses. Prepare to enter the Fast Track!",
-                "🚀",
-                "var(--success)"
-            );
+            if (p.isAI) {
+                showAIToast('🤖 IA entre sur le Fast Track !');
+            } else {
+                showAlertCard(
+                    "FÉLICITATIONS !",
+                    "Votre revenu passif dépasse deux fois vos dépenses. Vous entrez sur le Fast Track !",
+                    "🚀",
+                    "var(--success)"
+                );
+            }
             transitionToFastTrack();
         }
 
@@ -1108,7 +1116,9 @@ function transitionToFastTrack() {
     // Set board to display fast track
     state.isFastTrack = true;
     updateUI();
-    setTimeout(() => showAlertCard("FAST TRACK!", "Your passive income has been rounded to the nearest $1,000 and multiplied by 100 to seed your Fast Track account.", "🚀", "var(--success)"), 500);
+    if (!state.getCurrentPlayer().isAI) {
+        setTimeout(() => showAlertCard("FAST TRACK!", "Votre revenu passif a été converti pour amorcer votre compte Fast Track. Bienvenue sur la voie rapide !", "🚀", "var(--success)"), 500);
+    }
     
     document.body.classList.add('fast-track-mode'); // For global golden theme styling
     document.querySelector('.progress-bar-container').style.display = 'none'; // No more Rat Race progress
@@ -2894,7 +2904,11 @@ function renderMarketCardInternal(card, pIndex, finishMarketAction) {
             if (s.symbol === symbol) {
                 s.shares *= card.ratio;
                 s.cost /= card.ratio;
-                showAlertCard("Stock Split!", `${p.isAI ? 'Computer' : 'You'} had shares split!`, "📈", "var(--success)");
+                if (p.isAI) {
+                    showAIToast(`🤖 IA : Stock Split sur ${symbol} (x${card.ratio}).`);
+                } else {
+                    showAlertCard("Stock Split!", `Vos actions ${symbol} ont été splittées (x${card.ratio}) !`, "📈", "var(--success)");
+                }
             }
         });
         p.assets.options.forEach(o => {
