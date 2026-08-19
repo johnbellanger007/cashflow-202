@@ -980,23 +980,8 @@ function updateUI() {
         const hasEnoughIncome = p.fastTrackAssetIncome >= 50000;
         const hasMyDream = (p.ownedDreams && p.ownedDreams.some(d => d.isMyDream));
         
-        if (p.isFastTrack && (hasEnoughIncome || hasMyDream)) {
-            SoundManager.playTone(800, 'sine', 0.5);
-            const isAIWinner = p.isAI;
-            const reason = hasMyDream ? "Achat de son Rêve" : "Revenus de $50 000/mois atteints";
-            showAlertCard(
-                isAIWinner ? "💀 VOUS AVEZ PERDU ! 💀" : "🏆 VICTOIRE SUPRÊME ! 🏆",
-                isAIWinner 
-                    ? `L'ordinateur a remporté la partie avant vous (${reason}) !\nGAME OVER !`
-                    : `Félicitations ! Vous avez remporté la partie (${reason}) !\nBRAVO !`,
-                isAIWinner ? "🪦" : "💎",
-                isAIWinner ? "var(--danger)" : "var(--success)",
-                () => startNewGame()
-            );
-            return;
-        }
-
-        // Checking for Rat Race exit
+        // Win/loss is checked in handleSpaceLanding and showFastTrackModal, not here
+        // to avoid duplicate victory modals
         if (!p.isFastTrack && state.getPassiveIncome() >= (state.getTotalExpenses() * 2)) {
             if (p.isAI) {
                 showAIToast('🤖 IA entre sur le Fast Track !');
@@ -1123,7 +1108,8 @@ function transitionToFastTrack() {
     document.body.classList.add('fast-track-mode'); // For global golden theme styling
     document.querySelector('.progress-bar-container').style.display = 'none'; // No more Rat Race progress
     
-    // Fully reset the board and token!
+    // Fully reset the board and token - position MUST be 0 on Fast Track
+    state.players.forEach(pl => { pl.boardPosition = 0; });
     currentBoardTrack = FAST_TRACK_TRACK;
     updateTokenPosition();
     updateUI();
@@ -1530,12 +1516,14 @@ function confirmDream() {
     human.selectedDream = dreams[currentDreamIndex] || dreams[0];
     human.dreamSpaceId = dreamIndices[currentDreamIndex] || dreamIndices[0];
     
-    // Assign a random dream for AI (different from human)
+    // Assign a random dream for AI (different from human) - only once, never overwrite
     const ai = state.players[1];
-    let aiDreamIdx;
-    do { aiDreamIdx = Math.floor(Math.random() * dreams.length); } while (aiDreamIdx === currentDreamIndex && dreams.length > 1);
-    ai.selectedDream = dreams[aiDreamIdx];
-    ai.dreamSpaceId = dreamIndices[aiDreamIdx];
+    if (!ai.selectedDream) {
+        let aiDreamIdx;
+        do { aiDreamIdx = Math.floor(Math.random() * dreams.length); } while (aiDreamIdx === currentDreamIndex && dreams.length > 1);
+        ai.selectedDream = dreams[aiDreamIdx];
+        ai.dreamSpaceId = dreamIndices[aiDreamIdx];
+    }
 
     const modal = document.getElementById('card-modal');
     modal.classList.add('hidden');
@@ -2343,7 +2331,19 @@ function showFastTrackModal(space) {
                     () => startNewGame()
                 );
             };
+            const passDreamBtn = document.createElement('button');
+            passDreamBtn.className = 'action-btn danger';
+            passDreamBtn.textContent = 'PASS (pas assez de cash)';
+            passDreamBtn.onclick = finishTurn;
             modalActions.appendChild(buyBtn);
+            modalActions.appendChild(passDreamBtn);
+            // AI auto-clicker for dream purchase
+            if (p.isAI) {
+                setTimeout(() => {
+                    if (!buyBtn.disabled) buyBtn.click();
+                    else passDreamBtn.click();
+                }, 1500);
+            }
         } else if (isOppDream) {
             cardDesc.textContent = `You landed on ${opp.isAI ? 'the Computer' : 'Player 1'}'s dream! By simply stepping here, you've made it harder for them. Their dream cost has just DOUBLED!`;
             opp.selectedDream.cost *= 2; 
@@ -3532,7 +3532,7 @@ function sellAsset(arrayType, index, salePrice, modal, assetDetails, quantity = 
         else stockRef.shares -= q;
     }
     updateUI(); closeModal(modal);
-    if (p.isAI) state.nextTurn();
+    // NOTE: do NOT call state.nextTurn() here - the market flow (finishMarketAction) handles turn advancement
 }
 
 
@@ -3569,7 +3569,8 @@ function addStat(container, labelText, valueText, colorClass = '') {
 
 function buyAsset(card, modal, quantity = 1) {
     const p = state.getCurrentPlayer();
-    const unitPrice = card.downPayment || card.cost || 0;
+    // Use explicit undefined check - downPayment of 0 is valid (free deal) and must NOT fall through to card.cost
+    const unitPrice = (card.downPayment !== undefined && card.downPayment !== null) ? card.downPayment : (card.cost || 0);
     const totalCost = unitPrice * quantity;
     
     if (p.cash >= totalCost) {
@@ -3712,10 +3713,9 @@ function executeRoll(numDiceOverride = null) {
         
         setTimeout(() => {
             const landedSpace = currentTrack[state.boardPosition];
+            // Keep Roll Dice disabled until nextTurn() re-enables it via updateUI
+            btn.disabled = true;
             handleSpaceLanding(landedSpace);
-            
-            // NOTE: nextTurn() will be called by handleSpaceLanding or the resulting modal's "Close" event
-            btn.disabled = state.getCurrentPlayer().isAI; 
         }, 500); 
         
     }, 800);
